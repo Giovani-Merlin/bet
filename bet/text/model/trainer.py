@@ -159,9 +159,9 @@ class TextBiEncoderTrainer(pl.LightningModule):
             )
         query = self.query_encoder(query_inputs)
         val_output = {
-            "query_encoded": query.detach().cpu(),
+            "query_encoded": query.detach().cpu().numpy(),
             "candidates_idx": candidates_idx,
-            "candidates_encoded": candidates.detach().cpu()
+            "candidates_encoded": candidates.detach().cpu().numpy()
             if candidates is not None
             else None,
         }
@@ -177,25 +177,32 @@ class TextBiEncoderTrainer(pl.LightningModule):
         # candidates_encoded - all the candidates encoded
         # self.canidates_eval - all the candidates idx that were encoded (mapping to candidates_encoded)
         outputs = self.val_output
-        all_candidates = torch.vstack(
+        # all_candidates
+        all_candidates = np.vstack(
             [
                 output["candidates_encoded"]
                 for output in outputs
                 if output["candidates_encoded"] is not None
             ]
         )
-        all_queries = torch.vstack([output["query_encoded"] for output in outputs])
+
+        # all_queries
+        all_queries = np.vstack([output["query_encoded"] for output in outputs])
+
+        # all_correct_candidates_idx
         all_correct_candidates_idx = [
             candidate_index
             for batch_candidates_idx in outputs
             for candidate_index in batch_candidates_idx["candidates_idx"]
         ]
-        # batch vector multiplication
-        scores = torch.bmm(
-            all_queries.unsqueeze(0), all_candidates.t().unsqueeze(0)
+
+        # scores
+        scores = np.matmul(
+            np.expand_dims(all_queries, 0), np.transpose(all_candidates)
         ).squeeze()
+
         # Sort results by candidate idx
-        ordered_results = scores.cpu().argsort(dim=1, descending=True)
+        ordered_results = (-scores).argsort(axis=1)
         # Map candidate idx to position in candidates_pool
         query_to_candidate_map = [
             self.candidates_eval.index(idx) for idx in all_correct_candidates_idx
@@ -302,6 +309,7 @@ class TextBiEncoderTrainer(pl.LightningModule):
         )
 
         optimizer_scheduled = AdamW(optimizer_grouped_parameters)
+        #        optimizer_scheduled = DeepSpeedCPUAdam(optimizer_loss_parameters)
         # optimizer_loss = AdamW(optimizer_loss_parameters)
         # optimizer_scheduled = NAdam(optimizer_grouped_parameters, eps=1e-8)
         # We will use OneCycleLR to train the model - warmup and decay

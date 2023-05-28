@@ -66,7 +66,7 @@ def train_biencoder(params: Dict[str, str]):
         ),  # TODO: Always auto - needs to add on arg parser
         accelerator=params.get("training_accelerator", "auto"),
         min_epochs=params["training_min_epochs"],
-        log_every_n_steps=2,
+        log_every_n_steps=10,
         gradient_clip_val=1.0,
         default_root_dir=output_base_path,
         callbacks=[early_stop_callback, checkpoint_callback],
@@ -90,9 +90,9 @@ def train_biencoder(params: Dict[str, str]):
             data_module.params["training_batch_size"] = data_module.batch_size
             logger.info("Effective optimized batch size: %d", data_module.batch_size)
         # First validation to check raw performance
-        trainer.validate(text_bi_encoder_trainer, datamodule=data_module)
+        # trainer.validate(text_bi_encoder_trainer, datamodule=data_module)
         # Also test to check raw performance
-        trainer.test(text_bi_encoder_trainer, datamodule=data_module)
+        # trainer.test(text_bi_encoder_trainer, datamodule=data_module)
         logger.info(f"Saving model on {checkpoint_dir}")
         trainer.profile = "simple"
         trainer.fit(
@@ -103,7 +103,7 @@ def train_biencoder(params: Dict[str, str]):
     # Keyboard, OOM, etc
     except KeyboardInterrupt:
         logger.error("Interrupted by user")
-        # Avoid corrupted hdf5 files
+        # Avoid corrupted hdf5 files and save best checkpoint as final model on output dir
         tables.file._open_files.close_all()
 
     # Save training params
