@@ -1,0 +1,46 @@
+output_path: "output/wbdsm/testing" # Model training output path
+data:
+  data_path: "data/wbdsm"
+  use_title: False # Wether to use title or not - if True needs to have the "title" column
+  workers: 10 # Parallel data load, depends on the number of available cpus
+  candidate_max_length: 128 # Text length (left + right) in token units
+  query_max_length: 128 # Text length (left + right) in token units
+  cache_path: null
+
+models:
+  query_encoder:
+    model: "prajjwal1/bert-small" #"flaubert/flaubert_small_cased" #"prajjwal1/bert-medium"
+    append_model: null
+    output_dimension: null #
+    weights_path: null
+
+  candidate_encoder:
+    model: "prajjwal1/bert-small" #"flaubert/flaubert_small_cased" #"prajjwal1/bert-medium"
+    append_model: null
+    output_dimension: null #
+    weights_path: null
+
+training:
+  debug: False # Debug mode will use only the first 100 rows of the dataset
+  seed: 1234
+  shuffle: True
+  precision: "16-mixed"
+  val_check_interval: 0.2
+  optimization_strategy: "all"
+  batch_size: 16
+  learning_rate: 0.00001
+  patience: 3
+  weight_decay: 0.01 #
+  warmup_proportion: 0.1
+  random_negatives_loss_scaler: 50
+  auto_batch_size: "True"
+  min_epochs: 1
+  max_epochs: 5
+  #
+  loss_candidates_margin: 0.2
+  loss_candidates_similarity: True
+
+testing: # Only important when training the model
+  batch_size: 128
+  eval_recall: 10
+  top_k: 1000
