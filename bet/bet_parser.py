@@ -245,19 +245,7 @@ class BetParser(BaseParser):
             default=self.model_defaults[arg_category]["random_negatives_loss_scaler"],
             help="Random negatives loss scaler initial value - to transform cos similarity in logits",
         )
-        group.add_argument(
-            f"--{arg_category}_loss_candidates_margin",
-            type=float,
-            default=self.model_defaults[arg_category]["loss_candidates_margin"],
-            help="Margin to use in the candidates similarity loss function",
-        )
-        group.add_argument(
-            f"--{arg_category}_loss_candidates_similarity",
-            type=boolean_string,
-            default=self.model_defaults[arg_category]["loss_candidates_similarity"],
-            help="Whether to use the similarity between the candidates as a loss function",
-        )
-        #
+
         group.add_argument(
             f"--{arg_category}_learning_rate",
             type=float,

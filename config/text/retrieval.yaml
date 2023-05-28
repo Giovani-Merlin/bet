@@ -36,11 +36,8 @@ training:
   auto_batch_size: "True"
   min_epochs: 1
   max_epochs: 5
-  #
-  loss_candidates_margin: 0.2
-  loss_candidates_similarity: True
 
 testing: # Only important when training the model
   batch_size: 128
-  eval_recall: 10
+  eval_recall: 2
   top_k: 1000

@@ -9,6 +9,7 @@ import torch
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import OneCycleLR
 
+# from deepspeed.ops.adam.cpu_adam import DeepSpeedCPUAdam
 from bet.text.model.model import CandidateEncoder, QueryEncoder
 
 logger = logging.getLogger(__name__)
@@ -47,7 +48,6 @@ class TextBiEncoderTrainer(pl.LightningModule):
     def score_candidates(
         self,
         batch,
-        margin: float = 0.2,
     ):
         """
         Scores the candidates for each query vector
@@ -67,12 +67,11 @@ class TextBiEncoderTrainer(pl.LightningModule):
         ]
         # -100 scores on it
         scores.view(-1)[candidates_mask.ravel()] = -100
-        # Research about how the candidates are being grouped
-        # ! TODO: SHOULD Be DONE WITH CALLBACK (clean code) - but would need to do query vecs and candidate vecs outside score_candidates - needs to check it better
+        # Calculate the mean similarity between the candidates
         candidates_mask = ~np.equal.outer(candidates_idx, candidates_idx)
         candidates_similarities = candidate_vecs @ candidate_vecs.T
-        # Clip the candidate similarity to be at least the margin - negative values will be treated as 0
-        candidates_similarities = torch.clip(candidates_similarities - margin, min=0)
+        # Clip the candidate similarity - negative values will be treated as 0
+        candidates_similarities = torch.clip(candidates_similarities, min=0)
         mean_candidate_similarity = candidates_similarities.view(-1)[
             candidates_mask.ravel()
         ].mean()
@@ -89,11 +88,11 @@ class TextBiEncoderTrainer(pl.LightningModule):
             logger=True,
         )
 
-        return scores * self.random_negatives_loss_scaler, mean_candidate_similarity
+        return scores * self.random_negatives_loss_scaler
 
     def training_step(self, batch, batch_idx):
-        scores, mean_candidate_similarity = self.score_candidates(
-            batch, margin=self.params["training_loss_candidates_margin"]
+        scores = self.score_candidates(
+            batch,
         )
 
         # Doing the matrix multiplication we have the correct index at the diagonal position and all the other positions are the in batch negatives examples
@@ -103,20 +102,11 @@ class TextBiEncoderTrainer(pl.LightningModule):
         # Loss with logits
         cross_entropy_loss = torch.nn.CrossEntropyLoss(reduction="mean")
         labels = torch.arange(scores.shape[0], device=self.device)
-        query_candidate_loss = cross_entropy_loss(scores, labels)
-        # Needs to think about this class. Can be BCELOSS loss (classification to be 0, max inf min 0), mse loss (max 1 min 0), etc
-        # ! LAST TEST - says that if 0.2 is the mean similarity it's good (hyperparameter) - As it is impossible to have 0 distance between all vectors if n_candidates > n_dim
-        # This param should be optimized given the size of the candidates and the output of the encoder. This plays directly with the scaling of the scores
-        # If scaling is high the query can be just +- close to the candidate and probably the candidates are closer to each other and therefore the mean_candidate_similarity is high (requires higher margin).
-        # If Scaling is low and we have no margin the mean_candidate_similarity is low but the cross entropy loss will increase as it will be hard to find the correct candidate in a totally sparse space
-        # Choice now is to accept a heuristic margin (accept candidates to be max 0.2 distance from each other).
-        loss = query_candidate_loss
-        if self.params["training_loss_candidates_similarity"]:
-            loss += mean_candidate_similarity
+        loss = cross_entropy_loss(scores, labels)
+
         self.log_dict(
             {
                 "train_loss": loss,
-                "query_candidate_loss": query_candidate_loss,
                 "scores": torch.diagonal(scores).mean(),
             },
             on_step=True,
