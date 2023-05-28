@@ -13,7 +13,7 @@ from lightning import LightningDataModule
 from torch.utils.data import Dataset
 from transformers import AutoTokenizer
 
-from bet.text.datasets.constants import ENT_END_TAG, ENT_START_TAG
+from bet.text.datasets.constants import ENT_END_TAG, ENT_START_TAG, ENT_TITLE_TAG
 from bet.text.datasets.retrieval_dataset import RetrievalDataset
 from bet.text.datasets.utils import (
     get_candidate_representation,
