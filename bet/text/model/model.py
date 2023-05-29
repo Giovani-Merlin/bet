@@ -210,16 +210,16 @@ class BaseEncoder(torch.nn.Module):
         """Loads the index from the output directory."""
         if not index_path:
             index_path = self.params["output_path"]
+            index_path = os.path.join(index_path, INDEX_NAME)
 
-        output_index_file = os.path.join(index_path, INDEX_NAME)
-        if os.path.exists(output_index_file):
+        if os.path.exists(index_path):
             if index_type == "scann":
-                index = ScannIds.load_pretrained(output_index_file)
+                index = ScannIds.load_pretrained(index_path)
                 self.index = index
                 return index
 
         else:
-            logger.warning(f"Index not found on {output_index_file}")
+            logger.warning(f"Index not found on {index_path}")
             return None
 
     def search(
@@ -319,7 +319,8 @@ class CandidateEncoder(BaseEncoder):
             with torch.no_grad():
                 out_features = self.forward(encoded_candidates_batch)
                 if return_numpy:
-                    out_features = out_features.cpu().numpy()
+                    # Save precision as fp16 to save space
+                    out_features = out_features.cpu().numpy().astype(np.float16)
                 all_features.extend(out_features)
         # Return to the original order
         all_features = [all_features[idx] for idx in np.argsort(length_sorted_idx)]
@@ -369,17 +370,19 @@ class QueryEncoder(BaseEncoder):
 
         """
         queries = [queries] if isinstance(queries, str) else queries
-
+        # Like sentence transformers, sort by length
+        length_sorted_idx = np.argsort([-len(sen) for sen in queries])
+        queries_sorted = [queries[idx] for idx in length_sorted_idx]
         all_features = []
         for start_index in trange(0, len(queries), batch_size, desc="Batches"):
-            queries_batch = queries[start_index : start_index + batch_size]
+            queries_batch = queries_sorted[start_index : start_index + batch_size]
             # Encode batch
             encoded_queries_batch = get_query_representation(
                 queries_batch,
                 self.tokenizer,
                 max_seq_length=self.params["data_query_max_length"],
                 return_tensors="pt",
-                # padding="do_not_pad",
+                padding="longest",
             )
 
             # Put on device
@@ -392,4 +395,6 @@ class QueryEncoder(BaseEncoder):
                 if return_numpy:
                     out_features = out_features.cpu().numpy()
                 all_features.extend(out_features)
+        # Return to the original order
+        all_features = [all_features[idx] for idx in np.argsort(length_sorted_idx)]
         return np.array(all_features) if return_numpy else torch.tensor(all_features)

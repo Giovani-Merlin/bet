@@ -11,6 +11,7 @@ import os
 import scann
 import numpy as np
 from typing import Dict, Any, List
+from scann.scann_ops.py import scann_ops_pybind_backcompat
 
 
 class ScannIds:
@@ -45,10 +46,15 @@ class ScannIds:
         else:
             searcher = (
                 scann.scann_ops_pybind.builder(dataset, 64, "dot_product")
+                .tree(
+                    num_leaves=np.sqrt(dataset.shape[0]).astype(int),
+                    num_leaves_to_search=200,
+                )
                 .score_ah(2, anisotropic_quantization_threshold=0.2)
-                .reorder(200)
+                # .reorder(100)  # Dataset is needed if we want to reorder....
                 .build()
             )
+
         return searcher
 
     def save_index(self, persistence_path):
@@ -59,6 +65,11 @@ class ScannIds:
 
     @classmethod
     def load_pretrained(cls, persistence_path):
+        # Scann uses "assets" to get the index information
+        # If we change the path, it will not work - so we change the assets file to match the index file
+        # To update the assets file we can use scann backwards compatibility - it's a hack but it works
+        scann_ops_pybind_backcompat.populate_and_save_assets_proto(persistence_path)
+
         index = scann.scann_ops_pybind.load_searcher(persistence_path)
         ids = np.load(os.path.join(persistence_path, "ids.npy"))
         return cls(ids, index=index)

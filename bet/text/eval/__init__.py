@@ -36,7 +36,7 @@ def full_eval(params, dataset_name):
 
     #
     # index = None
-    index = candidate_encoder.load_index(params["output_path"])
+    index = candidate_encoder.load_index(params["testing_index_path"])
     if index is None:
         logger.info("Encoding candidates")
         index = candidate_encoder.create_index(
@@ -46,7 +46,7 @@ def full_eval(params, dataset_name):
             index_configs={"brute_force": False},
             batch_size=params["testing_batch_size"],
         )
-        candidate_encoder.save_index(params["output_path"])
+        candidate_encoder.save_index(params["testing_index_path"])
     # Get the closest candidates for each query
     logger.info("Loading query encoder")
     query_encoder = QueryEncoder.load_model(

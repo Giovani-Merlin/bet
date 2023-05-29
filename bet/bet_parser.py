@@ -351,3 +351,10 @@ class BetParser(BaseParser):
             help="Eval metric to monitor in training",
             metavar="\b",
         )
+        group.add_argument(
+            f"--{arg_category}_index_path",
+            default=self.model_defaults[arg_category]["index_path"],
+            type=str,
+            help="Path to the index to be loaded/created",
+            metavar="\b",
+        )

@@ -41,3 +41,4 @@ testing: # Only important when training the model
   batch_size: 128
   eval_recall: 2
   top_k: 1000
+  index_path: null
