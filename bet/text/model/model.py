@@ -308,7 +308,7 @@ class CandidateEncoder(BaseEncoder):
                 self.params["data_candidate_max_length"],
                 self.params.get("data_candidate_title"),
                 return_tensors="pt",
-                # padding="do_not_pad",
+                padding="longest",
             )
 
             # Put on device
