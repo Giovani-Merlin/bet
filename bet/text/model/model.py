@@ -162,6 +162,7 @@ class BaseEncoder(torch.nn.Module):
         sentences: List[str] = None,
         encoded_sentences=None,
         device: str = "cpu",
+        batch_size: int = 32,
         index_ids=None,
         index_type: str = "scann",
         index_configs: dict = {},
@@ -178,7 +179,9 @@ class BaseEncoder(torch.nn.Module):
 
         """
         if encoded_sentences is None:
-            encoded_sentences = self.encode(sentences, device=device, return_numpy=True)
+            encoded_sentences = self.encode(
+                sentences, device=device, return_numpy=True, batch_size=batch_size
+            )
         if index_type == "scann":
             index = ScannIds(
                 ids=index_ids,
@@ -292,9 +295,12 @@ class CandidateEncoder(BaseEncoder):
 
         """
         candidates = [candidates] if isinstance(candidates, str) else candidates
+        # Like sentence transformers, sort by length
+        length_sorted_idx = np.argsort([-len(sen) for sen in candidates])
+        candidates_sorted = [candidates[idx] for idx in length_sorted_idx]
         all_features = []
         for start_index in trange(0, len(candidates), batch_size, desc="Batches"):
-            candidates_batch = candidates[start_index : start_index + batch_size]
+            candidates_batch = candidates_sorted[start_index : start_index + batch_size]
             # Encode batch
             encoded_candidates_batch = get_candidate_representation(
                 candidates_batch,
@@ -315,6 +321,9 @@ class CandidateEncoder(BaseEncoder):
                 if return_numpy:
                     out_features = out_features.cpu().numpy()
                 all_features.extend(out_features)
+        # Return to the original order
+        all_features = [all_features[idx] for idx in np.argsort(length_sorted_idx)]
+
         return np.array(all_features) if return_numpy else torch.tensor(all_features)
 
 

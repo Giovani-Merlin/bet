@@ -103,9 +103,10 @@ class RetrievalRawCandidatesDataset(Dataset):
     def __init__(
         self,
         params: Dict[str, str],
+        samples_to_use: int = None,
     ):
         self.params = params
-        self.raw_data_set = self.read_dataset()
+        self.raw_data_set = self.read_dataset(samples_to_use)
         # ! Create tokenizers with special tokens
         self.candidate_tokenizer = AutoTokenizer.from_pretrained(
             params["candidate_encoder_model"]
@@ -121,7 +122,7 @@ class RetrievalRawCandidatesDataset(Dataset):
         processed_data = self.process_data(self.raw_data_set[index])
         return processed_data
 
-    def read_dataset(self):
+    def read_dataset(self, samples_to_use: int = None):
         """
         Read dataset from jsonl file. If debug, filter to only use the candidates from the queries set.
         """
@@ -132,6 +133,8 @@ class RetrievalRawCandidatesDataset(Dataset):
         with open(txt_file_path, mode="r", encoding="utf-8") as file:
             for n, line in enumerate(file):
                 samples.append(json.loads(line.strip()))
+                if samples_to_use and n >= samples_to_use:
+                    break
         return samples
 
     def process_data(self, data: Dict[str, str]):

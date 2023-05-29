@@ -28,7 +28,9 @@ def full_eval(params, dataset_name):
     #
     candidate_encoder = candidate_encoder.to(device)
     logger.info("Loading candidates dataset")
-    candidates_dataset = RetrievalRawCandidatesDataset(params).raw_data_set
+    candidates_dataset = RetrievalRawCandidatesDataset(
+        params, samples_to_use=1e6
+    ).raw_data_set
     abstracts = [data["abstract"] for data in candidates_dataset]
     index_ids = [data["candidate_index"] for data in candidates_dataset]
 
@@ -42,6 +44,7 @@ def full_eval(params, dataset_name):
             device=device,
             index_ids=index_ids,
             index_configs={"brute_force": False},
+            batch_size=params["testing_batch_size"],
         )
         candidate_encoder.save_index(params["output_path"])
     # Get the closest candidates for each query
@@ -104,23 +107,3 @@ def full_eval(params, dataset_name):
         json.dump(statistics, f)
 
     return statistics
-    #
-    # index_qualitative = 1500
-    # query = abstracts[index_qualitative]
-    # query = ["Sex in the weekend is good to relax abou the problems of the life"]
-    # candidates_close, distances = candidate_encoder.search(
-    #     query=query, device=device, index=index
-    # )
-    # print(abstracts[indexid_to_index_ds[candidates_close[0][0]]])
-    # print("*************************************")
-    # print(abstracts[candidates_close[0][1]])
-    # #
-    # #
-    # query_1 = ["Iqos is a device to smoke smoke-free tobacco"]
-    # # query_2 = ["Videogames is a device to play videogames"]
-    # query_2 = ["Vaping can be used to replace tobacco"]
-    # encoded_1 = candidate_encoder.encode(query_1, device=device)
-    # encoded_2 = candidate_encoder.encode(query_2, device=device)
-    # distance = encoded_1 @ encoded_2.T
-    # print(distance)
-    # print("top")
