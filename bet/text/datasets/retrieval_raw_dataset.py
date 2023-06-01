@@ -90,7 +90,7 @@ class RetrievalRawQueriesDataset(Dataset):
             sample,
             self.query_tokenizer,
             self.params["data_query_max_length"],
-            "mention",
+            "link",
             "query",
         )
 

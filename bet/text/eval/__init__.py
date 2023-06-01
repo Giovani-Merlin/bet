@@ -32,6 +32,7 @@ def full_eval(params, dataset_name):
         params, samples_to_use=1e6
     ).raw_data_set
     abstracts = [data["abstract"] for data in candidates_dataset]
+    # Needs correct index for benchmark
     index_ids = [data["candidate_index"] for data in candidates_dataset]
 
     #
@@ -47,6 +48,16 @@ def full_eval(params, dataset_name):
             batch_size=params["testing_batch_size"],
         )
         candidate_encoder.save_index(params["testing_index_path"])
+        candidates_title = [data["candidate"] for data in candidates_dataset]
+        # Usefull index_to_title for inference/qualitative analysis
+        index_to_title = {
+            index: title for index, title in zip(index_ids, candidates_title)
+        }
+        with open(
+            os.path.join(params["testing_index_path"], "index_to_title.json"), "w"
+        ) as f:
+            json.dump(index_to_title, f)
+
     # Get the closest candidates for each query
     logger.info("Loading query encoder")
     query_encoder = QueryEncoder.load_model(

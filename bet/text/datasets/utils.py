@@ -84,7 +84,7 @@ def get_query_representation(
     query: Union[Dict[str, str], List[Dict[str, str]]],
     tokenizer: AutoTokenizer,
     max_seq_length: int,
-    mention_key: str = "mention",
+    link_key: str = "link_key",
     query_key: str = "query",
     padding="max_length",
     return_tensors="np",
@@ -100,7 +100,7 @@ def get_query_representation(
     for query_dict in query:
         mention_tokens = []
         # Put special mention tokens around mention
-        mention_tokens = tokenizer.tokenize(query_dict[mention_key])
+        mention_tokens = tokenizer.tokenize(query_dict[link_key])
         mention_tokens = [ENT_START_TAG] + mention_tokens + [ENT_END_TAG]
 
         query_left = query_dict[query_key + "_left"]

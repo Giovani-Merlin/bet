@@ -52,7 +52,7 @@ def map_zeshel_to_wbdsm(dataset, output_path):
                 item = {}
                 item["query_left"] = sample["context_left"]
                 item["query_right"] = sample["context_right"]
-                item["mention"] = sample["mention"]
+                item["link"] = sample["mention"]
                 item["candidate_index"] = candidates_title.index(sample["label_title"])
                 item["query_index"] = k
                 item["world"] = sample["world"]

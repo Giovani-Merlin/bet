@@ -8,7 +8,7 @@ from typing import Dict, List, Union
 import numpy as np
 import torch
 from tqdm.autonotebook import trange
-from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTokenizer
+from transformers import AutoConfig, AutoModel, AutoTokenizer
 
 from bet.text.datasets.constants import ENT_END_TAG, ENT_START_TAG, ENT_TITLE_TAG
 from bet.text.vector_store import INDEX_NAME
@@ -58,7 +58,7 @@ class BaseEncoder(torch.nn.Module):
         """Initializes the model."""
         config = AutoConfig.from_pretrained(params[f"{self.model_type}_model"])
 
-        self.model = AutoModelForSequenceClassification.from_pretrained(
+        self.model = AutoModel.from_pretrained(
             params[f"{self.model_type}_model"], config=config
         )
 
@@ -79,10 +79,6 @@ class BaseEncoder(torch.nn.Module):
             self.over_model = None
         #
         self.params = params
-        # Removes head of the model
-        children = list(self.model.named_children())
-
-        delattr(self.model, children[1][0])
         if self.over_model:
             # Injects over the encoder to get parameters with optimizer
             self.model = torch.nn.Sequential(
@@ -97,19 +93,13 @@ class BaseEncoder(torch.nn.Module):
         """
 
         output = self.model.base_model(**model_input)
+        # TODO(GM): Use or not use pooler output? If yes, needs to add on optimizer
         last_hidden_state = output["last_hidden_state"]
         cls_output = last_hidden_state[:, 0]
-
-        # Pass the output from the first model to the second one.
-        if self.over_model is not None:
-            embeddings = self.over_model(cls_output)
-        else:
-            embeddings = cls_output
-
         # Normalizes the model with numerical stability
         eps = 1e-8
-        embeddings_n = embeddings.norm(dim=1)[:, None]
-        embeddings = embeddings / torch.clamp(embeddings_n, min=eps)
+        embeddings_n = cls_output.norm(dim=1)[:, None]
+        embeddings = cls_output / torch.clamp(embeddings_n, min=eps)
 
         return embeddings
 
@@ -153,7 +143,12 @@ class BaseEncoder(torch.nn.Module):
             params = json.load(cfile)
 
         model = cls(params)
-        model.load_weights(model_path, cpu)
+        model.load_weights(
+            model_path,
+            cpu,
+        )
+        if "16" in params["training_precision"]:
+            model = model.half()
         return model
 
     # Functions for searching
@@ -166,6 +161,7 @@ class BaseEncoder(torch.nn.Module):
         index_ids=None,
         index_type: str = "scann",
         index_configs: dict = {},
+        index_to_title: dict = None,
     ):
         """
         Creates an index with the sentences passed as argument.
@@ -187,6 +183,7 @@ class BaseEncoder(torch.nn.Module):
                 ids=index_ids,
                 dataset=encoded_sentences,
                 index_configs=index_configs,
+                index_to_title=index_to_title,
             )
         self.index = index
         return index
@@ -195,12 +192,12 @@ class BaseEncoder(torch.nn.Module):
         """Saves the index in the output directory."""
         if not index_path:
             index_path = self.params["output_path"]
+            index_path = os.path.join(index_path, INDEX_NAME)
 
         if not os.path.exists(index_path):
             os.makedirs(index_path)
 
-        output_index_file = os.path.join(index_path, INDEX_NAME)
-        self.index.save_index(output_index_file)
+        self.index.save_index(index_path)
 
     def load_index(
         self,
@@ -229,6 +226,7 @@ class BaseEncoder(torch.nn.Module):
         top_k: int = 10,
         index=None,
         device: str = "cpu",
+        as_titles: bool = False,
     ):
         """
         Search for similar sentences.
@@ -250,7 +248,7 @@ class BaseEncoder(torch.nn.Module):
             index = self.index
         if len(encoded_query.shape) == 1:
             encoded_query = encoded_query.reshape(1, -1)
-        indexes, scores = index.search(encoded_query, top_k)
+        indexes, scores = index.search(encoded_query, top_k, as_titles=as_titles)
         return indexes, scores
 
 

@@ -22,12 +22,16 @@ class ScannIds:
         ids: List[str],
         dataset=None,
         index=None,
+        index_to_title=None,
         index_configs: Dict[str, Any] = {"brute_force": True},
     ):
         # Assert that we don't have dataset and index
         assert (dataset is None) or (index is None)
         self.ids = ids
         self.ids_map = np.vectorize({i: n for i, n in enumerate(self.ids)}.get)
+        self.index_to_title = (
+            np.vectorize(index_to_title.get) if index_to_title else None
+        )
         self.index = (
             self.generate_index(dataset, **index_configs)
             if dataset is not None
@@ -74,7 +78,7 @@ class ScannIds:
         ids = np.load(os.path.join(persistence_path, "ids.npy"))
         return cls(ids, index=index)
 
-    def search(self, query, top_k=1000):
+    def search(self, query, top_k=1000, as_titles=False):
         indexes, distances = self.index.search_batched(query, final_num_neighbors=top_k)
         # Re-map the indexes to the original ids
         indexes = self.ids_map(indexes.astype(int))
@@ -89,6 +93,8 @@ class ScannIds:
             # Remove the invalid values
             indexes[i] = np.delete(idx, invalid_indexes)
             distances[i] = np.delete(dist, invalid_indexes)
+        if as_titles:
+            indexes = self.index_to_title(indexes)
         return indexes, distances
 
 

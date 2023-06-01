@@ -10,8 +10,6 @@ import os
 
 from bet.bet_parser import BetParser
 from bet.text.eval import full_eval
-from collections import defaultdict
-from glob import glob
 
 logger = logging.getLogger("bet")
 
