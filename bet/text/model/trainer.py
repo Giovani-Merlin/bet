@@ -33,10 +33,22 @@ class TextBiEncoderTrainer(pl.LightningModule):
             self.query_encoder = QueryEncoder.load_model(
                 training_params["query_encoder_weights_path"]
             )
-
-        self.random_negatives_loss_scaler = torch.nn.Parameter(
+        # Get mean value of weights in the last layer and save it as a buffer
+        # This will be used to re-scale the loss_parameter to avoid using manual optimization.
+        # In this way the a single optimizer can handle all the parameters (as they're in the same scale)
+        last_layer_mean_value = (
+            torch.abs(
+                self.query_encoder.model.encoder.layer[-1].output.dense.weight
+            ).mean()
+        ).item()
+        re_escaler_factor = (
+            float(training_params["training_random_negatives_loss_scaler"])
+            / last_layer_mean_value
+        )
+        self.register_buffer("re_escaler_factor", torch.tensor(re_escaler_factor))
+        self.random_negatives_loss_parameter = torch.nn.Parameter(
             torch.tensor(
-                float(training_params["training_random_negatives_loss_scaler"]),
+                last_layer_mean_value,
                 requires_grad=True,
             )
         )
@@ -51,6 +63,7 @@ class TextBiEncoderTrainer(pl.LightningModule):
     ):
         """
         Scores the candidates for each query vector
+        TODO(GM): Make it full torch
         """
         query_inputs, candidate_inputs, auxiliar = batch
 
@@ -75,6 +88,7 @@ class TextBiEncoderTrainer(pl.LightningModule):
         mean_candidate_similarity = candidates_similarities.view(-1)[
             candidates_mask.ravel()
         ].mean()
+        loss_scaler = self.random_negatives_loss_parameter * self.re_escaler_factor
         self.log_dict(
             {"mean_candidate_similarity": mean_candidate_similarity},
             on_step=True,
@@ -82,13 +96,13 @@ class TextBiEncoderTrainer(pl.LightningModule):
             logger=True,
         )
         self.log_dict(
-            {"random_negatives_loss_scaler": self.random_negatives_loss_scaler},
+            {"training_random_negatives_loss_scaler": loss_scaler},
             on_step=True,
             prog_bar=True,
             logger=True,
         )
 
-        return scores * self.random_negatives_loss_scaler
+        return scores * loss_scaler
 
     def training_step(self, batch, batch_idx):
         scores = self.score_candidates(
@@ -275,7 +289,7 @@ class TextBiEncoderTrainer(pl.LightningModule):
             f"{len(parameters_without_decay_names)} parameters will be optimized WITHOUT decay"
         )
         # Like self.random_negatives_loss
-        loss_parameters = [self.random_negatives_loss_scaler]
+        loss_parameters = [self.random_negatives_loss_parameter]
         optimizer_grouped_parameters = [
             {
                 "params": parameters_with_decay,
@@ -289,10 +303,10 @@ class TextBiEncoderTrainer(pl.LightningModule):
             },
         ]
         optimizer_loss_parameters = [
-            {  # ! TODO: Use a different optimizer maybe without scheduler
+            {
                 "params": loss_parameters,
                 "training_weight_decay": 0.0,
-                "lr": 0.1,  # Make it as hyperparameter...
+                "lr": self.params["training_learning_rate"],
             }
         ]
         # Needs to do manual optimization to use multiple schedulers/optims...
