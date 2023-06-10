@@ -147,8 +147,8 @@ class BaseEncoder(torch.nn.Module):
             model_path,
             cpu,
         )
-        if "16" in params["training_precision"]:
-            model = model.half()
+        #       if "16" in params["training_precision"]:
+        #       model = model.half()
         return model
 
     # Functions for searching

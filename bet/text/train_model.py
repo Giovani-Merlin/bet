@@ -90,9 +90,9 @@ def train_biencoder(params: Dict[str, str]):
             data_module.params["training_batch_size"] = data_module.batch_size
             logger.info("Effective optimized batch size: %d", data_module.batch_size)
         # First validation to check raw performance
-        # trainer.validate(text_bi_encoder_trainer, datamodule=data_module)
+        trainer.validate(text_bi_encoder_trainer, datamodule=data_module)
         # Also test to check raw performance
-        # trainer.test(text_bi_encoder_trainer, datamodule=data_module)
+        trainer.test(text_bi_encoder_trainer, datamodule=data_module)
         logger.info(f"Saving model on {checkpoint_dir}")
         trainer.profile = "simple"
         trainer.fit(

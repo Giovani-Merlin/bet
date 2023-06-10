@@ -44,7 +44,7 @@ def full_eval(params, dataset_name):
             sentences=abstracts,
             device=device,
             index_ids=index_ids,
-            index_configs={"brute_force": False},
+            index_configs={"brute_force": True},
             batch_size=params["testing_batch_size"],
         )
         candidate_encoder.save_index(params["testing_index_path"])

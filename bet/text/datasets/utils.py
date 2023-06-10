@@ -84,7 +84,7 @@ def get_query_representation(
     query: Union[Dict[str, str], List[Dict[str, str]]],
     tokenizer: AutoTokenizer,
     max_seq_length: int,
-    link_key: str = "link_key",
+    link_key: str = "link",
     query_key: str = "query",
     padding="max_length",
     return_tensors="np",
