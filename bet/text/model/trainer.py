@@ -248,18 +248,11 @@ class TextBiEncoderTrainer(pl.LightningModule):
         """
         Returns specialized optimizer for the model and optimization strategy.
         """
-        # To avoid problems with different model names like bert, ffn, etc we will use the base_model default from huggingface
-        # Currently we support optimizing for all layers (embeddings + encoder) or just the encoder layers
-        if self.params["training_optimization_strategy"] == "all":
-            model_to_optimize = [
-                "query_encoder.model.base_model",
-                "candidate_encoder.model.base_model",
-            ]
-        elif self.params["training_optimization_strategy"] == "encoder_layers":
-            model_to_optimize = [
-                "query_encoder.model.base_model.encoder",
-                "candidate_encoder.model.base_model.encoder",
-            ]
+
+        model_to_optimize = [
+            "query_encoder.model.base_model",
+            "candidate_encoder.model.base_model",
+        ]
 
         parameters_with_decay = []
         parameters_with_decay_names = []
@@ -309,24 +302,13 @@ class TextBiEncoderTrainer(pl.LightningModule):
                 "lr": self.params["training_learning_rate"],
             }
         ]
-        # Needs to do manual optimization to use multiple schedulers/optims...
-        # loss_parameters_optimizer = AdamW(optimizer_loss_parameters)
-        # scheduler_loss = OneCycleLR(
-        #     loss_parameters_optimizer,
-        #     max_lr=1,
-        #     total_steps=self.trainer.estimated_stepping_batches,
-        #     pct_start=self.params["training_warmup_proportion"],
-        #     anneal_strategy="linear",
-        # )
+
         optimizer_grouped_parameters = (
             optimizer_grouped_parameters + optimizer_loss_parameters
         )
 
         optimizer_scheduled = AdamW(optimizer_grouped_parameters)
-        #        optimizer_scheduled = DeepSpeedCPUAdam(optimizer_loss_parameters)
-        # optimizer_loss = AdamW(optimizer_loss_parameters)
-        # optimizer_scheduled = NAdam(optimizer_grouped_parameters, eps=1e-8)
-        # We will use OneCycleLR to train the model - warmup and decay
+
         scheduler = OneCycleLR(
             optimizer_scheduled,
             max_lr=self.params["training_learning_rate"],

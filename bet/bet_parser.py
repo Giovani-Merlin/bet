@@ -286,13 +286,6 @@ class BetParser(BaseParser):
             help="Precision to use for training as lightning str format - 16 or 32",
             metavar="\b",
         )
-        group.add_argument(
-            f"--{arg_category}_optimization_strategy",
-            default=self.model_defaults[arg_category]["optimization_strategy"],
-            help="Optimization strategy to use, Choice: encoder_layers or all"
-            "*{n}_last_layers tested just for bert and distilbert models",
-            metavar="\b",
-        )
 
         group.add_argument(
             f"--{arg_category}_weight_decay",

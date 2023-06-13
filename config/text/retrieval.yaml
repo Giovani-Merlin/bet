@@ -26,7 +26,6 @@ training:
   shuffle: True
   precision: "16-mixed"
   val_check_interval: 0.2
-  optimization_strategy: "all"
   batch_size: 16
   learning_rate: 0.00001
   patience: 3
