@@ -117,9 +117,9 @@ def train_biencoder(params: Dict[str, str]):
         best_checkpoint_path
     )
     # Save candidate and query final encoders
-    text_bi_encoder_trainer.candidate_encoder.save_model(checkpoint_dir)
-    text_bi_encoder_trainer.query_encoder.save_model(checkpoint_dir)
-    logger.info("Final candidate/query encoder saved to: %s", checkpoint_dir)
+    text_bi_encoder_trainer.candidate_encoder.save_model(output_base_path)
+    text_bi_encoder_trainer.query_encoder.save_model(output_base_path)
+    logger.info("Final candidate/query encoder saved to: %s", output_base_path)
     # Check/save results
     validation_results = trainer.validate(
         text_bi_encoder_trainer, datamodule=data_module
@@ -130,5 +130,5 @@ def train_biencoder(params: Dict[str, str]):
         "validation": validation_results,
         "test": test_results,
     }
-    with open(os.path.join(checkpoint_dir, "training_results.json"), "w") as outfile:
+    with open(os.path.join(output_base_path, "training_results.json"), "w") as outfile:
         json.dump(results, outfile)
