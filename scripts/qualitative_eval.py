@@ -1,8 +1,5 @@
 """
-Should use the already parsed (from training) hdf5 dataset withe the tokenized candidates. 
-To make it easy to change dataset evaluation will use RetrievalRawCandidatesDataset directly (and to create the code for inference at the same time)
-
-Needs to remove break on candidates reading for debug
+Quickly script to get the top candidates using the same example as the BLINK repo.
 
 """
 import logging

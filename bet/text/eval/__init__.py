@@ -37,19 +37,19 @@ def full_eval(params, dataset_name):
 
     #
     # index = None
-    index = candidate_encoder.load_index(params["testing_index_path"])
+    index = candidate_encoder.load_index(index_path=params["testing_index_path"])
     if index is None:
         logger.info("Encoding candidates")
         index = candidate_encoder.create_index(
             sentences=abstracts,
             device=device,
             index_ids=index_ids,
-            index_configs={"brute_force": True},
+            index_configs={"brute_force": False},
             batch_size=params["testing_batch_size"],
         )
         candidate_encoder.save_index(params["testing_index_path"])
         candidates_title = [data["candidate"] for data in candidates_dataset]
-        # Usefull index_to_title for inference/qualitative analysis
+        # Useful index_to_title for inference/qualitative analysis
         index_to_title = {
             index: title for index, title in zip(index_ids, candidates_title)
         }

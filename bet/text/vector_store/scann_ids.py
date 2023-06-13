@@ -1,10 +1,3 @@
-"""
-    Scann is the fastest algorithm, BUT we can't just add new vectors to the index, we need to rebuild it from scratch.
-    We can easily use multiple indexes, but it's more work
-    Therefore, we migrate to FAISS or Milvus
-    
-    UPDATE: Faiss has tons of configs... Better just scann and it's good
-"""
 
 import os
 
@@ -25,6 +18,16 @@ class ScannIds:
         index_to_title=None,
         index_configs: Dict[str, Any] = {"brute_force": True},
     ):
+        """Wrapper for Scann. It makes easier to recover correct ids and to recover titles directly.
+            Also, makes easier to generate the index.
+
+        Args:
+            ids (List[str]): Id for each row in the dataset.
+            dataset (_type_, optional): Dataset, if you want to generate the index. Defaults to None.
+            index (_type_, optional): Index, if you want to load a pre-trained index (and maybe just change the index_to_tile)
+            index_to_title (_type_, optional): Extra-mapping to recover the title from the index (or any other information). Defaults to None.
+            index_configs (_type_, optional):Index config. Actually just supports brute_force and reorder. Defaults to {"brute_force": True}.
+        """
         # Assert that we don't have dataset and index
         assert (dataset is None) or (index is None)
         self.ids = ids
@@ -40,7 +43,7 @@ class ScannIds:
 
     # Recomendations:
     # https://github.com/google-research/google-research/blob/master/scann/docs/algorithms.md
-    def generate_index(self, dataset, brute_force=True, **kwargs):
+    def generate_index(self, dataset, brute_force=True,reorder=False, **kwargs):
         if brute_force:
             searcher = (
                 scann.scann_ops_pybind.builder(dataset, 64, "dot_product")
@@ -53,11 +56,12 @@ class ScannIds:
                 .tree(
                     num_leaves=np.sqrt(dataset.shape[0]).astype(int),
                     num_leaves_to_search=200,
-                )
-                .score_ah(2, anisotropic_quantization_threshold=0.2)
-                # .reorder(100)  # Dataset is needed if we want to reorder....
-                .build()
-            )
+                ).score_ah(2, anisotropic_quantization_threshold=0.2))
+            if reorder:
+                searcher = searcher.reorder(100)
+            
+            searcher = searcher.build()
+            
 
         return searcher
 

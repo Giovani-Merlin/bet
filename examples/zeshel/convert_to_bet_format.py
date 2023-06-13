@@ -31,7 +31,7 @@ def map_zeshel_to_wbdsm(dataset, output_path):
             if candidate_title not in candidates_pool:
                 item = {}
                 item["abstract"] = sample["label"]
-                item["candidate_title"] = sample["label_title"]
+                item["candidate"] = sample["label_title"]
                 item["candidate_index"] = n
                 item["world"] = sample["world"]
                 n += 1

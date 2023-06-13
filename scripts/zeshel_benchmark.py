@@ -38,45 +38,39 @@ for k, v in domain_set.items():
 if __name__ == "__main__":
     parser = BetParser(eval=True)
     params = parser.parse_groups()
-    # Quick dirty do all models:
-    models_zeshel_path = "models/zeshel"
-    all_models = glob(os.path.join(models_zeshel_path, "*"))
-    all_results = defaultdict(dict)
-    # List all the worlds inside the data path
+
     worlds = os.listdir(params["data_data_path"])
     data_path = params["data_data_path"]
+    world_results = defaultdict(dict)
 
-    for model in all_models:
-        logger.info(f"Running model {model}")
-        params["query_encoder_weights_path"] = model
-        params["candidate_encoder_weights_path"] = model
-        params["output_path"] = model
-
-        output_path = params["output_path"]
-        for world in worlds:
-            params["data_data_path"] = os.path.join(data_path, world)
-            params["output_path"] = os.path.join(output_path, world)
-            all_results[model][world] = full_eval(params, "queries")
+    output_path = params["output_path"]
+    for world in worlds:
+        params["data_data_path"] = os.path.join(data_path, world)
+        params["output_path"] = os.path.join(output_path, world)
+        params["testing_index_path"] = os.path.join(
+            output_path, world, "index")
+        world_results[world] = full_eval(params, "queries")
     # Group by dataset per model
-    dataset_results = defaultdict(lambda: defaultdict(list))
-    for model, stats_world in all_results.items():
-        for world, stats in stats_world.items():
-            dataset_results[model][inversed_domain_set[world]].append(stats)
+    dataset_results = defaultdict(dict)
+
+    stats_world = defaultdict(list)
+    for world, stats in world_results.items():
+        stats_world[inversed_domain_set[world]].append(stats)
     # For each recall, get the mean and std
-    dataset_recall_results = defaultdict(lambda: defaultdict(list))
-    for model, stats_world in dataset_results.items():
-        for dataset, stats in stats_world.items():
-            dataset_stats = defaultdict(list)
-            for stats_dict in stats:
-                for recall, value in stats_dict["recall"].items():
-                    dataset_stats[recall].append(value)
-            dataset_recall_results[model][dataset] = {
-                k: {"mean": np.mean(v), "std": np.std(v)}
-                for k, v in dataset_stats.items()
-            }
+    dataset_recall_results = defaultdict(dict)
+
+    for dataset, stats in stats_world.items():
+        dataset_stats = defaultdict(list)
+        for stats_dict in stats:
+            for recall, value in stats_dict["recall"].items():
+                dataset_stats[recall].append(value)
+        dataset_recall_results[dataset] = {
+            k: {"mean": np.mean(v), "std": np.std(v)}
+            for k, v in dataset_stats.items()
+        }
     # Save results of each model
-    for model_path, stats_ds in dataset_recall_results.items():
-        with open(os.path.join(model_path, "results_zeshel_macro.json"), "w") as f:
-            json.dump(stats_ds, f, indent=2)
+
+    with open(os.path.join(output_path, "results_zeshel_macro.json"), "w") as f:
+        json.dump(dataset_recall_results, f, indent=2)
 
     print("STOP")

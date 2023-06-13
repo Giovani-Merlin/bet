@@ -24,6 +24,7 @@ from bet.text.datasets.utils import (
 )
 
 
+
 ####
 class BaseEncoder(torch.nn.Module):
     """
@@ -37,6 +38,9 @@ class BaseEncoder(torch.nn.Module):
         ! TODO(GM): modify this:
         Uses by default the cls token as the output of the model
         Normalizes the output of the model to use cos distance
+        
+    # ! TODO(GM): Apart from the index functions, it has a full match with sentence bert... Just need to adapt optimizer
+    # Just use it as a base class and add a new level of abstraction for the index functions....
 
     if tokenizer resize the input to the max length of the model
     """
@@ -128,7 +132,7 @@ class BaseEncoder(torch.nn.Module):
             else:
                 state_dict = torch.load(model_path)
             logger.info(f"Model weight's loaded from {model_path}")
-            self.load_state_dict(state_dict)
+            self.load_state_dict(state_dict, strict=False)
         except FileNotFoundError:
             logger.warning(
                 f"Model weight's not found on {model_path}, starting model with random weights"

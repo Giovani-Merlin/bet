@@ -100,6 +100,7 @@ def get_query_representation(
     for query_dict in query:
         mention_tokens = []
         # Put special mention tokens around mention
+        
         mention_tokens = tokenizer.tokenize(query_dict[link_key])
         mention_tokens = [ENT_START_TAG] + mention_tokens + [ENT_END_TAG]
 
