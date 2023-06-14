@@ -18,6 +18,11 @@ The framework leverages the power of PyTorch Lightning to efficiently train and 
 
 ## Usage
 
+Pre-trained model on english dump 2023/04/01: <https://drive.google.com/drive/folders/1_8DQK23sbbwXpqVOWoQclGTjLeYIisPw?usp=sharing>
+
+TODO: Add usage instructions - but one can check the scripts/test_semantic_similarity.py or wbdsm_blink.py for examples.
+Example of training can be seen on docs/results.md
+
 ## Resources
 
 BET builds upon the advancements and insights from BLINK by Facebook and Google dense entity representations.

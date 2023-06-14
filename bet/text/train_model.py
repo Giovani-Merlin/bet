@@ -73,7 +73,7 @@ def train_biencoder(params: Dict[str, str]):
         logger=tb_logger,
         val_check_interval=params["training_val_check_interval"],
         precision=params.get("training_precision", "32"),
-        # strategy="deepspeed_stage_2_offload",
+     #   strategy="deepspeed_stage_2_offload",
     )
     try:
         if params.get("training_auto_batch_size"):

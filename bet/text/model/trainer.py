@@ -9,7 +9,7 @@ import torch
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import OneCycleLR
 
-# from deepspeed.ops.adam.cpu_adam import DeepSpeedCPUAdam
+#from deepspeed.ops.adam.cpu_adam import DeepSpeedCPUAdam
 from bet.text.model.model import CandidateEncoder, QueryEncoder
 
 logger = logging.getLogger(__name__)
@@ -236,6 +236,16 @@ class TextBiEncoderTrainer(pl.LightningModule):
                 for position in correct_candidate_position
             ]
         )
+        correct_candidate_position = np.array(correct_candidate_position)
+        # Sum of the position of the correct candidate in the ordered results - track if overfitting to some candidates
+        # Also clip to avoid putting too much importance in some of them
+        sum_pos_clipped = np.clip(correct_candidate_position, 0, 16).sum()
+        self.log(
+            "sum_pos_clipped",
+            sum_pos_clipped,
+            prog_bar=True,
+            logger=True,
+        )
         self.candidates_eval.clear()  # Reset candidates_eval
         self.val_output.clear()
         self.log(f"recall_R@{recall_ref}", score, prog_bar=True, logger=True)
@@ -306,7 +316,7 @@ class TextBiEncoderTrainer(pl.LightningModule):
         optimizer_grouped_parameters = (
             optimizer_grouped_parameters + optimizer_loss_parameters
         )
-
+        #optimizer_scheduled = DeepSpeedCPUAdam(optimizer_grouped_parameters)
         optimizer_scheduled = AdamW(optimizer_grouped_parameters)
 
         scheduler = OneCycleLR(
@@ -315,6 +325,7 @@ class TextBiEncoderTrainer(pl.LightningModule):
             total_steps=self.trainer.estimated_stepping_batches,
             pct_start=self.params["training_warmup_proportion"],
             anneal_strategy="linear",
+            cycle_momentum=False
         )
 
         lr_scheduler_config = {
