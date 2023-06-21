@@ -8,7 +8,8 @@ For pre-training, first we need to create the full wikipedia pre-training datase
 
 ```json
 { "language": "en", "max_chars": 2048, "candidates_size": 2000000, "train_size": 100000, "test_size": 1000, "validation_size": 1000, "candidate_text_surfaces": 1, "candidate_surface_appearance": 10, "max_rank": 100000,  "query_max_chars": 1024}
-'''
+```
+
 The dumped used was 'enwiki-20230401-pages-articles-multistream.xml.bz2'
 
 The generated dataset has approximately 900.000 rows for train, and 5.000 for train and test. The dataset is already on BET format, so we can just use it to train the model.
@@ -30,13 +31,13 @@ After having the dataset, we can pre-train the model using the following argumen
     "--query_encoder_model","prajjwal1/bert-medium",
     "--training_random_negatives_loss_scaler","90.00",
     "--testing_eval_recall","1"
-'''
+```
 
 ## Fine-tuning
 
 Having the pre-trained model, we can fine-tune it on the zeshel dataset using the following arguments:
 
-'''bash
+```bash
 "--data_data_path","data/zeshel/wbdsm_format",
 "--query_encoder_weights_path","models/en/bert-medium",
 "--candidate_encoder_weights_path","models/en/bert-medium",
@@ -48,18 +49,24 @@ Having the pre-trained model, we can fine-tune it on the zeshel dataset using th
 "--training_batch_size","96",
 "--training_auto_batch_size","False",
 "--training_random_negatives_loss_scaler","90.00"
-'''
-Finally, we can evaluate it in the same way as BLINK - macro results per world.
+```
 
-'''bash
+Finally, we can evaluate it in the same way as BLINK - macro results per world with the script on `scripts/zeshel_benchmark.py`
+
+```bash
 "--data_data_path","data/zeshel/wbdsm_format/split_by_worlds",
 "--query_encoder_weights_path","models/zeshel/bert-medium",
 "--candidate_encoder_weights_path","models/zeshel/bert-medium",
 "--output_path","models/zeshel/bert-medium",
-'''
+```
 
-## Results:
+## Results
 
-# Note
+|   | Train R@1  | Validation R@1  | Test R@1  | Train R@64  | Validation R@64  | Test R@1  |
+|--- |--- |--- |--- |--- |--- |--- |
+| Blink  | x  | x  | 63.03  | 93.12  | 91.44  | 82.06  |
+| BET  | 78  | 68.5  | 68  | 98.12  | 94.2  | 90  |
 
-The qualitative results in the other side, are not so great. The model seems great for sentence similarity tasks (with the option to "focus" on some parts by using the entity envelope) but not so great for entity linking. The main problem is that the model is because of the strategy of the dataset creation - we have mostly different context with just one entity - and using one-shot it can't rely in just the entity surface' , therefore, the models learn to map the context with just a small focus on the entity. This is a known problem that must be fixed at the dataset time creation - we just need to sample different candidates relying in some score to give preference to the same Wikipedia page and section.
+All results from BLINK where colected from their paper. Results from BET where made by macro-averaging the results for all world results in the given dataset type (as BLINK).
+
+We can see huge improvement in all the datasets, this improvement probably is due to the methodology choosen for creating the pre-training dataset, that is, it was pre-trained with a hard dataset, being force to learn the context of the data and not memorizing the candidate's surfaces.
