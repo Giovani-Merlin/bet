@@ -23,7 +23,7 @@ def full_eval(params, dataset_name):
 
     logger.info("Loading candidate encoder")
     candidate_encoder = CandidateEncoder.load_model(
-        model_path=params["candidate_encoder_weights_path"]
+        model_path=params["candidate_encoder_weights_path"], device=device
     )
     #
     candidate_encoder = candidate_encoder.to(device)
@@ -61,7 +61,7 @@ def full_eval(params, dataset_name):
     # Get the closest candidates for each query
     logger.info("Loading query encoder")
     query_encoder = QueryEncoder.load_model(
-        model_path=params["query_encoder_weights_path"]
+        model_path=params["query_encoder_weights_path"], device=device
     )
     query_encoder = query_encoder.to(device)
     logger.info("Loading queries dataset")

@@ -121,25 +121,24 @@ class BaseEncoder(torch.nn.Module):
         with open(output_config_file, "w") as outfile:
             json.dump(self.params, outfile)
 
-    def load_weights(self, model_path=None, cpu=False):
+    def load_weights(self, model_path=None, device="cpu"):
         model_path = os.path.join(model_path, self.name + "_" + WEIGHTS_NAME)
 
         try:
-            if cpu:
-                state_dict = torch.load(
-                    model_path, map_location=lambda storage, location: "cpu"
-                )
-            else:
-                state_dict = torch.load(model_path)
+            
+            state_dict = torch.load(
+                model_path, map_location=device
+            )
             logger.info(f"Model weight's loaded from {model_path}")
             self.load_state_dict(state_dict, strict=False)
+            self.to(device)
         except FileNotFoundError:
             logger.warning(
                 f"Model weight's not found on {model_path}, starting model with random weights"
             )
 
     @classmethod
-    def load_model(cls, model_path, model_name=None, cpu=False):
+    def load_model(cls, model_path, model_name=None, device="cpu"):
         """Loads the model from the output directory."""
 
         output_config_file = os.path.join(model_path, model_name + "_" + CONFIG_NAME)
@@ -149,7 +148,7 @@ class BaseEncoder(torch.nn.Module):
         model = cls(params)
         model.load_weights(
             model_path,
-            cpu,
+            device,
         )
         #       if "16" in params["training_precision"]:
         #       model = model.half()
@@ -266,9 +265,9 @@ class CandidateEncoder(BaseEncoder):
         self.model.resize_token_embeddings(len(self.tokenizer.get_vocab()))
 
     @classmethod
-    def load_model(cls, model_path, cpu=False):
+    def load_model(cls, model_path, device="cpu"):
         """Loads the model from the output directory."""
-        return super().load_model(model_path, "candidate_encoder", cpu)
+        return super().load_model(model_path, "candidate_encoder", device)
 
     def get_tokenizer(self):
         tokenizer = AutoTokenizer.from_pretrained(self.params["query_encoder_model"])
@@ -339,9 +338,9 @@ class QueryEncoder(BaseEncoder):
         self.model.resize_token_embeddings(len(self.tokenizer.get_vocab()))
 
     @classmethod
-    def load_model(cls, model_path, cpu=False):
+    def load_model(cls, model_path, device="cpu"):
         """Loads the model from the output directory."""
-        return super().load_model(model_path, "query_encoder", cpu)
+        return super().load_model(model_path, "query_encoder", device)
 
     def get_tokenizer(self):
         tokenizer = AutoTokenizer.from_pretrained(self.params["query_encoder_model"])
