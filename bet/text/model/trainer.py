@@ -36,9 +36,14 @@ class TextBiEncoderTrainer(pl.LightningModule):
         # Get mean value of weights in the last layer and save it as a buffer
         # This will be used to re-scale the loss_parameter to avoid using manual optimization.
         # In this way the a single optimizer can handle all the parameters (as they're in the same scale)
+        model_module = self.query_encoder.model
+        if hasattr(model_module, "encoder"):
+            last_layer = model_module.encoder.layer[-1].output.dense.weight
+        elif hasattr(model_module, "transformer"):
+            last_layer = model_module.transformer.layer[-1].ffn.lin2.weight
         last_layer_mean_value = (
             torch.abs(
-                self.query_encoder.model.encoder.layer[-1].output.dense.weight
+                last_layer
             ).mean()
         ).item()
         re_escaler_factor = (

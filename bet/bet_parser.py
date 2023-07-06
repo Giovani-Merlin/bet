@@ -57,9 +57,7 @@ class BaseParser(argparse.ArgumentParser):
 
         for group in self._action_groups:
             # Group args
-            group_dict = {
-                a.dest: getattr(args, a.dest, None) for a in group._group_actions
-            }
+            group_dict = {a.dest: getattr(args, a.dest, None) for a in group._group_actions}
             # Check if there are mutually exclusive arguments
             exclusive_groups = [
                 {a.dest: getattr(args, a.dest, None) for a in a._group_actions}
@@ -68,9 +66,7 @@ class BaseParser(argparse.ArgumentParser):
             # If there are, check if there are more than one argument defined
             for exclusive_group in exclusive_groups:
                 if sum([1 for v in exclusive_group.values() if v is not None]) > 1:
-                    raise ValueError(
-                        f"Mutually exclusive arguments {exclusive_group.keys()} are not allowed"
-                    )
+                    raise ValueError(f"Mutually exclusive arguments {exclusive_group.keys()} are not allowed")
             arg_groups[group.title] = group_dict
         return arg_groups
 
@@ -171,9 +167,7 @@ class BetParser(BaseParser):
         """
         arg_category = "models"
         group = self.add_argument_group(arg_category)
-        self.add_encoder_args(
-            group, self.model_defaults[arg_category]["query_encoder"], "query_encoder"
-        )
+        self.add_encoder_args(group, self.model_defaults[arg_category]["query_encoder"], "query_encoder")
         self.add_encoder_args(
             group,
             self.model_defaults[arg_category]["candidate_encoder"],
@@ -314,6 +308,14 @@ class BetParser(BaseParser):
             type=int,
             default=self.model_defaults[arg_category]["min_epochs"],
             help="Min epochs to perform before stopping the training",
+            metavar="\b",
+        )
+
+        group.add_argument(
+            f"--{arg_category}_continue_from_checkpoint",
+            type=str,
+            default=None,
+            help="Path to the checkpoint to continue training from",
             metavar="\b",
         )
 
