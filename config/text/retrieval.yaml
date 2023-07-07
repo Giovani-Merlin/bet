@@ -25,16 +25,16 @@ training:
   seed: 1234
   shuffle: True
   precision: "16-mixed"
-  val_check_interval: 0.2
+  val_check_interval: 0.5
   batch_size: 16
   learning_rate: 0.00001
   patience: 3
   weight_decay: 0.01 #
   warmup_proportion: 0.1
-  random_negatives_loss_scaler: 50
+  random_negatives_loss_scaler: 80
   auto_batch_size: "True"
-  min_epochs: null
-  max_epochs: null
+  min_epochs: 4
+  max_epochs: 10
 
 testing: # Only important when training the model
   batch_size: 128
