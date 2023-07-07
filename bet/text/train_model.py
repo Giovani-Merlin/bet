@@ -37,11 +37,12 @@ def train_biencoder(params: Dict[str, str]):
     np.random.seed(seed)
     torch.manual_seed(seed)
     output_base_path = params["output_path"]
-    recall_metric_name = f"recall_R@{params['testing_eval_recall']}"
+    recall_metric_name = params['training_metric_tracking']
+    metric_mode = params['training_metric_tracking_mode']
     checkpoint_callback = ModelCheckpoint(
         save_top_k=2,
         monitor=f"{recall_metric_name}",
-        mode="max",
+        mode=metric_mode,
         dirpath=os.path.join(output_base_path, "checkpoints/"),
         filename=f"text-biencoder-{{epoch:02d}}-{{{recall_metric_name}:.4f}}",
     )
@@ -50,7 +51,7 @@ def train_biencoder(params: Dict[str, str]):
         min_delta=0.00,
         patience=params["training_patience"],
         verbose=True,
-        mode="max",
+        mode=metric_mode,
     )
     # Get tb logger
     tb_logger = TensorBoardLogger(output_base_path, name="lightning_logs")

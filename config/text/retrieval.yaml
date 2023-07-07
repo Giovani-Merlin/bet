@@ -35,6 +35,8 @@ training:
   auto_batch_size: "True"
   min_epochs: 4
   max_epochs: 10
+  metric_tracking: "sum_pos_clipped"
+  metric_tracking_mode: "min"
 
 testing: # Only important when training the model
   batch_size: 128

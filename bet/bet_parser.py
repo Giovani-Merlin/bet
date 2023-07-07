@@ -319,6 +319,20 @@ class BetParser(BaseParser):
             metavar="\b",
         )
 
+        group.add_argument(
+            f"--{arg_category}_metric_tracking",
+            default=self.model_defaults[arg_category]["metric_tracking"],
+            type=int,
+            help="Metric to monitor in training. Checkpoint and early stopping will use this metric. For recall use recall_R@x where x is the number of candidates to search for (e.g. recall_R@5)",
+            metavar="\b",
+        )
+        group.add_argument(
+            f"--{arg_category}_metric_tracking_mode",
+            type=str,
+            default=self.model_defaults[arg_category]["metric_tracking_mode"],
+            metavar="\b",
+            help="Metric mode to use in training. Modes are min or max",
+        )
     def add_testing_args(self):
         """
         To be used for testing - to evaluate model performance and/or to optimize hyperparameters.
@@ -339,13 +353,7 @@ class BetParser(BaseParser):
             help="Number of candidates to search for (and compute statistics) when doing full evaluation",
             metavar="\b",
         )
-        group.add_argument(
-            f"--{arg_category}_eval_recall",
-            default=self.model_defaults[arg_category]["eval_recall"],
-            type=int,
-            help="Eval metric to monitor in training",
-            metavar="\b",
-        )
+
         group.add_argument(
             f"--{arg_category}_index_path",
             default=self.model_defaults[arg_category]["index_path"],
