@@ -334,6 +334,14 @@ class BetParser(BaseParser):
             help="Metric mode to use in training. Modes are min or max",
         )
 
+        group.add_argument(
+            f"--{arg_category}_reset_last_n_layers",
+            type=int,
+            default=self.model_defaults[arg_category]["reset_last_n_layers"],
+            metavar="\b",
+            help="Number of layers to reset in the model",
+        )
+
     def add_testing_args(self):
         """
         To be used for testing - to evaluate model performance and/or to optimize hyperparameters.

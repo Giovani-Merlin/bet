@@ -37,6 +37,7 @@ training:
   max_epochs: 10
   metric_tracking: "sum_pos_clipped"
   metric_tracking_mode: "min"
+  reset_last_n_layers: null
 
 testing: # Only important when training the model
   batch_size: 128

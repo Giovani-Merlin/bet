@@ -24,7 +24,6 @@ from bet.text.datasets.utils import (
 )
 
 
-
 ####
 class BaseEncoder(torch.nn.Module):
     """
@@ -38,7 +37,7 @@ class BaseEncoder(torch.nn.Module):
         ! TODO(GM): modify this:
         Uses by default the cls token as the output of the model
         Normalizes the output of the model to use cos distance
-        
+
     # ! TODO(GM): Apart from the index functions, it has a full match with sentence bert... Just need to adapt optimizer
     # Just use it as a base class and add a new level of abstraction for the index functions....
 
@@ -62,9 +61,18 @@ class BaseEncoder(torch.nn.Module):
         """Initializes the model."""
         config = AutoConfig.from_pretrained(params[f"{self.model_type}_model"])
 
-        self.model = AutoModel.from_pretrained(
-            params[f"{self.model_type}_model"], config=config
-        )
+        self.model = AutoModel.from_pretrained(params[f"{self.model_type}_model"], config=config)
+        # ! TODO(GM): Make it candidate/query specific argument
+        if params.get(f"training_reset_last_n_layers", None):
+            # Reset last n layers
+            reset_last_n_layers = params[f"training_reset_last_n_layers"]
+            # Some models are called transformer and others encoder
+            if hasattr(self.model.base_model, "transformer"):
+                encoder_model = self.model.base_model.transformer
+            elif hasattr(self.model.base_model, "encoder"):
+                encoder_model = self.model.base_model.encoder
+            for i in range(reset_last_n_layers):
+                encoder_model.layer[-1 - i].apply(self.model.base_model._init_weights)
 
         # ! Add special head
         # ! TODO(GM): Make it useful by changing to "base_model" to use siamese structure and just different over_models
@@ -75,9 +83,7 @@ class BaseEncoder(torch.nn.Module):
                 self.over_model = torch.nn.Sequential(
                     torch.nn.Linear(output_dim, output_dim),
                     torch.nn.ReLU(),
-                    torch.nn.Linear(
-                        output_dim, self.params[f"{model_type}_output_dimension"]
-                    ),
+                    torch.nn.Linear(output_dim, self.params[f"{model_type}_output_dimension"]),
                 )
         else:
             self.over_model = None
@@ -85,9 +91,7 @@ class BaseEncoder(torch.nn.Module):
         self.params = params
         if self.over_model:
             # Injects over the encoder to get parameters with optimizer
-            self.model = torch.nn.Sequential(
-                self.model.base_model.encoder, self.over_model
-            )
+            self.model = torch.nn.Sequential(self.model.base_model.encoder, self.over_model)
 
     def forward(self, model_input: dict):
         """
@@ -125,17 +129,12 @@ class BaseEncoder(torch.nn.Module):
         model_path = os.path.join(model_path, self.name + "_" + WEIGHTS_NAME)
 
         try:
-            
-            state_dict = torch.load(
-                model_path, map_location=device
-            )
+            state_dict = torch.load(model_path, map_location=device)
             logger.info(f"Model weight's loaded from {model_path}")
             self.load_state_dict(state_dict, strict=False)
             self.to(device)
         except FileNotFoundError:
-            logger.warning(
-                f"Model weight's not found on {model_path}, starting model with random weights"
-            )
+            logger.warning(f"Model weight's not found on {model_path}, starting model with random weights")
 
     @classmethod
     def load_model(cls, model_path, model_name=None, device="cpu"):
@@ -178,9 +177,7 @@ class BaseEncoder(torch.nn.Module):
 
         """
         if encoded_sentences is None:
-            encoded_sentences = self.encode(
-                sentences, device=device, return_numpy=True, batch_size=batch_size
-            )
+            encoded_sentences = self.encode(sentences, device=device, return_numpy=True, batch_size=batch_size)
         if index_type == "scann":
             index = ScannIds(
                 ids=index_ids,
@@ -313,9 +310,7 @@ class CandidateEncoder(BaseEncoder):
             )
 
             # Put on device
-            encoded_candidates_batch = {
-                key: value.to(device) for key, value in encoded_candidates_batch.items()
-            }
+            encoded_candidates_batch = {key: value.to(device) for key, value in encoded_candidates_batch.items()}
 
             with torch.no_grad():
                 out_features = self.forward(encoded_candidates_batch)
@@ -344,9 +339,7 @@ class QueryEncoder(BaseEncoder):
 
     def get_tokenizer(self):
         tokenizer = AutoTokenizer.from_pretrained(self.params["query_encoder_model"])
-        tokenizer.add_special_tokens(
-            {"additional_special_tokens": [ENT_START_TAG, ENT_END_TAG]}
-        )
+        tokenizer.add_special_tokens({"additional_special_tokens": [ENT_START_TAG, ENT_END_TAG]})
         return tokenizer
 
     def encode(
@@ -387,9 +380,7 @@ class QueryEncoder(BaseEncoder):
             )
 
             # Put on device
-            encoded_queries_batch = {
-                key: value.to(device) for key, value in encoded_queries_batch.items()
-            }
+            encoded_queries_batch = {key: value.to(device) for key, value in encoded_queries_batch.items()}
 
             with torch.no_grad():
                 out_features = self.forward(encoded_queries_batch)
