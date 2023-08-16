@@ -254,9 +254,6 @@ class TextBiEncoderTrainer(pl.LightningModule):
                 else:
                     parameters_with_decay.append(p)
                     parameters_with_decay_names.append(n)
-            else:
-                p.requires_grad = False
-                not_optimized_parameters_names.append(n)
 
         logger.info(f"Model have {len(list(self.named_parameters()))} parameters")
         logger.info(f"{len(parameters_with_decay_names)} parameters will be optimized WITH decay")

@@ -14,7 +14,6 @@ if __name__ == "__main__":
         params["data_cache_path"] = os.path.join(params["data_cache_path"], "training_debug")
         params["training_val_check_interval"] = 0.5
         params["testing_batch_size"] = 8
-        params["testing_eval_recall"] = 1
         params["training_auto_batch_size"] = False
         params["training_batch_size"] = 8
     os.makedirs(params["output_path"], exist_ok=True)
