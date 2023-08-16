@@ -37,8 +37,8 @@ def train_biencoder(params: Dict[str, str]):
     np.random.seed(seed)
     torch.manual_seed(seed)
     output_base_path = params["output_path"]
-    recall_metric_name = params['training_metric_tracking']
-    metric_mode = params['training_metric_tracking_mode']
+    recall_metric_name = params["training_metric_tracking"]
+    metric_mode = params["training_metric_tracking_mode"]
     checkpoint_callback = ModelCheckpoint(
         save_top_k=2,
         monitor=f"{recall_metric_name}",
@@ -75,22 +75,26 @@ def train_biencoder(params: Dict[str, str]):
         #   strategy="deepspeed_stage_2_offload",
     )
     try:
-        if params.get("training_auto_batch_size"):
-            tuner = Tuner(trainer)
-            tuner.scale_batch_size(text_bi_encoder_trainer, mode="binsearch", datamodule=data_module)
-            # Reduce 5% of the batch size to avoid OOM - tuner optimizes too much
-            data_module.batch_size = int(data_module.batch_size * 0.95)
-            # make it divisible by 8 to use tensor cores
-            data_module.batch_size = data_module.batch_size - data_module.batch_size % 8
-            params["training_batch_size"] = data_module.batch_size
-            # Avoir error when saving hparams, needs to have the same keys for the model and the datamodule
-            data_module.params["training_batch_size"] = data_module.batch_size
-            logger.info("Effective optimized batch size: %d", data_module.batch_size)
-        # First validation to check raw performance
-        trainer.validate(text_bi_encoder_trainer, datamodule=data_module)
-        # Also test to check raw performance
-        trainer.test(text_bi_encoder_trainer, datamodule=data_module)
-        logger.info(f"Saving model on {checkpoint_dir}")
+        continue_checkpoint_path = params.get(
+            "training_continue_from_checkpoint",
+            None,
+        )
+        if not continue_checkpoint_path:
+            if params.get("training_auto_batch_size"):
+                tuner = Tuner(trainer)
+                tuner.scale_batch_size(text_bi_encoder_trainer, mode="binsearch", datamodule=data_module)
+                # Reduce 5% of the batch size to avoid OOM - tuner optimizes too much
+                data_module.batch_size = int(data_module.batch_size * 0.95)
+                # make it divisible by 8 to use tensor cores
+                data_module.batch_size = data_module.batch_size - data_module.batch_size % 8
+                params["training_batch_size"] = data_module.batch_size
+                # Avoir error when saving hparams, needs to have the same keys for the model and the datamodule
+                data_module.params["training_batch_size"] = data_module.batch_size
+                logger.info("Effective optimized batch size: %d", data_module.batch_size)
+            # First validation to check raw performance
+            trainer.validate(text_bi_encoder_trainer, datamodule=data_module)
+            # Also test to check raw performance
+            trainer.test(text_bi_encoder_trainer, datamodule=data_module)
         trainer.profile = "simple"
         trainer.fit(
             model=text_bi_encoder_trainer,
@@ -100,7 +104,8 @@ def train_biencoder(params: Dict[str, str]):
                 None,
             ),
         )
-    # Keyboard, OOM, etc
+    # Keyboard
+    # TODO(GM): Add for SIGKILL for cheap training using spot instances
     except KeyboardInterrupt:
         logger.error("Interrupted by user")
         # Avoid corrupted hdf5 files and save best checkpoint as final model on output dir
