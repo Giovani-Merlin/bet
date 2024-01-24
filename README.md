@@ -12,7 +12,7 @@ BET (Bi-Encoder Toolkit) is a flexible framework that provides an efficient impl
 
 ## Architecture
 
-BET's core architecture revolves around the Bi-Encoder model. It consists of two separate encoders: one for queries and another for the input data (e.g., abstracts of Wikipedia pages). The encoders map the input text to dense vector representations, which capture semantic information and similarities between different texts.
+BET`s core architecture revolves around the Bi-Encoder model. It consists of two separate encoders: one for queries and another for the input data (e.g., abstracts of Wikipedia pages). The encoders map the input text to dense vector representations, which capture semantic information and similarities between different texts.
 
 The framework leverages the power of PyTorch Lightning to efficiently train and manage the Bi-Encoder model.
 
@@ -32,6 +32,21 @@ BET builds upon the advancements and insights from BLINK by Facebook and Google 
 ## Contributing
 
 I welcome contributions to BET from the open-source community. If you have ideas, bug fixes, or enhancements, please feel free to submit a pull request or open an issue on the GitHub repository.
+
+Use black to format the code, with the following settings`--line-length 89 --preview`
+
+Or as a Vscode config:
+
+```json
+{
+    "python.formatting.provider": "black",
+    "python.formatting.blackArgs": [
+        "--line-length",
+        "89",
+        "--preview"
+    ],
+}
+```
 
 ## License
 
