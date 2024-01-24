@@ -1,4 +1,3 @@
-
 import os
 
 import scann
@@ -43,7 +42,7 @@ class ScannIds:
 
     # Recomendations:
     # https://github.com/google-research/google-research/blob/master/scann/docs/algorithms.md
-    def generate_index(self, dataset, brute_force=True,reorder=False, **kwargs):
+    def generate_index(self, dataset, brute_force=True, reorder=False, **kwargs):
         if brute_force:
             searcher = (
                 scann.scann_ops_pybind.builder(dataset, 64, "dot_product")
@@ -56,12 +55,13 @@ class ScannIds:
                 .tree(
                     num_leaves=np.sqrt(dataset.shape[0]).astype(int),
                     num_leaves_to_search=200,
-                ).score_ah(2, anisotropic_quantization_threshold=0.2))
+                )
+                .score_ah(2, anisotropic_quantization_threshold=0.2)
+            )
             if reorder:
                 searcher = searcher.reorder(100)
-            
+
             searcher = searcher.build()
-            
 
         return searcher
 
@@ -70,6 +70,12 @@ class ScannIds:
         self.index.serialize(persistence_path)
         # Save the ids
         np.save(os.path.join(persistence_path, "ids.npy"), self.ids)
+        # Save the index_to_title
+        if self.index_to_title:
+            np.save(
+                os.path.join(persistence_path, "index_to_title.npy"),
+                self.index_to_title.pyfunc.__self__,
+            )
 
     @classmethod
     def load_pretrained(cls, persistence_path):
@@ -77,10 +83,15 @@ class ScannIds:
         # If we change the path, it will not work - so we change the assets file to match the index file
         # To update the assets file we can use scann backwards compatibility - it's a hack but it works
         scann_ops_pybind_backcompat.populate_and_save_assets_proto(persistence_path)
-
+        index_to_title = None
         index = scann.scann_ops_pybind.load_searcher(persistence_path)
         ids = np.load(os.path.join(persistence_path, "ids.npy"))
-        return cls(ids, index=index)
+        if os.path.exists(os.path.join(persistence_path, "index_to_title.json")):
+            index_to_title = np.load(
+                os.path.join(persistence_path, "index_to_title.npy"),
+                allow_pickle=True,
+            ).item()
+        return cls(ids, index=index, index_to_title=index_to_title)
 
     def search(self, query, top_k=1000, as_titles=False):
         indexes, distances = self.index.search_batched(query, final_num_neighbors=top_k)
