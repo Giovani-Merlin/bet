@@ -44,3 +44,4 @@ testing: # Only important when training the model
   eval_recall: 2
   top_k: 1000
   index_path: null
+  pool_size: 50000
