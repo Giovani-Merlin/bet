@@ -62,7 +62,9 @@ def train_biencoder(params: Dict[str, str]):
     trainer = pl.Trainer(
         # gpus=train_config["train_gpus"],
         max_epochs=params["training_max_epochs"],
-        devices=params.get("training_devices", "auto"),  # TODO: Always auto - needs to add on arg parser
+        devices=params.get(
+            "training_devices", "auto"
+        ),  # TODO: Always auto - needs to add on arg parser
         accelerator=params.get("training_accelerator", "auto"),
         min_epochs=params["training_min_epochs"],
         log_every_n_steps=10,
@@ -82,11 +84,15 @@ def train_biencoder(params: Dict[str, str]):
         if not continue_checkpoint_path:
             if params.get("training_auto_batch_size"):
                 tuner = Tuner(trainer)
-                tuner.scale_batch_size(text_bi_encoder_trainer, mode="binsearch", datamodule=data_module)
+                tuner.scale_batch_size(
+                    text_bi_encoder_trainer, mode="binsearch", datamodule=data_module
+                )
                 # Reduce 5% of the batch size to avoid OOM - tuner optimizes too much
                 data_module.batch_size = int(data_module.batch_size * 0.95)
                 # make it divisible by 8 to use tensor cores
-                data_module.batch_size = data_module.batch_size - data_module.batch_size % 8
+                data_module.batch_size = (
+                    data_module.batch_size - data_module.batch_size % 8
+                )
                 params["training_batch_size"] = data_module.batch_size
                 # Avoir error when saving hparams, needs to have the same keys for the model and the datamodule
                 data_module.params["training_batch_size"] = data_module.batch_size
@@ -118,13 +124,17 @@ def train_biencoder(params: Dict[str, str]):
     # Load best checkpoint
     best_checkpoint_path = trainer.checkpoint_callback.best_model_path
     logger.info("Loading best checkpoint: %s", best_checkpoint_path)
-    text_bi_encoder_trainer = TextBiEncoderTrainer.load_from_checkpoint(best_checkpoint_path)
+    text_bi_encoder_trainer = TextBiEncoderTrainer.load_from_checkpoint(
+        best_checkpoint_path
+    )
     # Save candidate and query final encoders
     text_bi_encoder_trainer.candidate_encoder.save_model(output_base_path)
     text_bi_encoder_trainer.query_encoder.save_model(output_base_path)
     logger.info("Final candidate/query encoder saved to: %s", output_base_path)
     # Check/save results
-    validation_results = trainer.validate(text_bi_encoder_trainer, datamodule=data_module)
+    validation_results = trainer.validate(
+        text_bi_encoder_trainer, datamodule=data_module
+    )
     test_results = trainer.test(text_bi_encoder_trainer, datamodule=data_module)
     # Save results
     results = {

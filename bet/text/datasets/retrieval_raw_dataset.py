@@ -1,6 +1,7 @@
 """
 # * Default class for data processing (using from pytorch multiprocessing)
 """
+
 import json
 import logging
 import os
@@ -37,8 +38,12 @@ class RetrievalRawQueriesDataset(Dataset):
         self.dataset_name = dataset_name
         self.params = params
         self.raw_data_set = self.read_dataset()
-        self.query_tokenizer = AutoTokenizer.from_pretrained(params["query_encoder_model"])
-        self.query_tokenizer.add_special_tokens({"additional_special_tokens": [ENT_START_TAG, ENT_END_TAG]})
+        self.query_tokenizer = AutoTokenizer.from_pretrained(
+            params["query_encoder_model"]
+        )
+        self.query_tokenizer.add_special_tokens(
+            {"additional_special_tokens": [ENT_START_TAG, ENT_END_TAG]}
+        )
 
     def __len__(self):
         return len(self.raw_data_set)
@@ -104,8 +109,12 @@ class RetrievalRawCandidatesDataset(Dataset):
         self.params = params
         self.raw_data_set = self.read_dataset(samples_to_use)
         # ! Create tokenizers with special tokens
-        self.candidate_tokenizer = AutoTokenizer.from_pretrained(params["candidate_encoder_model"])
-        self.candidate_tokenizer.add_special_tokens({"additional_special_tokens": [ENT_TITLE_TAG]})
+        self.candidate_tokenizer = AutoTokenizer.from_pretrained(
+            params["candidate_encoder_model"]
+        )
+        self.candidate_tokenizer.add_special_tokens(
+            {"additional_special_tokens": [ENT_TITLE_TAG]}
+        )
 
     def __len__(self):
         return len(self.raw_data_set)
@@ -177,8 +186,16 @@ def create_hdf5_dataset_candidates(iter_: str, file_dicts: str, dataset_size: in
             for key, value in candidate.items():
                 file_dicts["candidate"].create_dataset(
                     key,
-                    (dataset_size, len(value[0])) if type(value[0]) == np.ndarray else (dataset_size,),
-                    dtype=value[0].dtype if type(value[0]) == np.ndarray else value[0].__class__,
+                    (
+                        (dataset_size, len(value[0]))
+                        if type(value[0]) == np.ndarray
+                        else (dataset_size,)
+                    ),
+                    dtype=(
+                        value[0].dtype
+                        if type(value[0]) == np.ndarray
+                        else value[0].__class__
+                    ),
                 )
             first_batch = False
 
@@ -202,8 +219,16 @@ def create_hdf5_dataset_queries(iter_: str, file_dicts: str, dataset_size: int):
                 for key, value in values.items():
                     file_dicts[dataset].create_dataset(
                         key,
-                        (dataset_size, len(value[0])) if type(value[0]) == np.ndarray else (dataset_size,),
-                        dtype=value[0].dtype if type(value[0]) == np.ndarray else value[0].__class__,
+                        (
+                            (dataset_size, len(value[0]))
+                            if type(value[0]) == np.ndarray
+                            else (dataset_size,)
+                        ),
+                        dtype=(
+                            value[0].dtype
+                            if type(value[0]) == np.ndarray
+                            else value[0].__class__
+                        ),
                     )
             first_batch = False
         # Store data in the datasets
@@ -223,16 +248,24 @@ def process_raw_dataset(dataset_type: str, params: Dict[str, str]):
     """
 
     queries_dataset = RetrievalRawQueriesDataset(dataset_type, params)
-    queries_iter = get_dataloader_iter(queries_dataset, params["data_workers"], group_processed_queries)
+    queries_iter = get_dataloader_iter(
+        queries_dataset, params["data_workers"], group_processed_queries
+    )
     # Create h5py file to store query and candidates data
     file_dicts = get_hdf5_dataset_dict(params, dataset_type, "w")
-    create_hdf5_dataset_queries(queries_iter, file_dicts, len(queries_dataset.raw_data_set))
+    create_hdf5_dataset_queries(
+        queries_iter, file_dicts, len(queries_dataset.raw_data_set)
+    )
     # Process only one time the candidates pool.
     if dataset_type == "train":
         # Process candidates dataset
         candidates_dataset = RetrievalRawCandidatesDataset(params)
-        candidates_iter = get_dataloader_iter(candidates_dataset, params["data_workers"], group_processed_candidates)
-        create_hdf5_dataset_candidates(candidates_iter, file_dicts, len(candidates_dataset.raw_data_set))
+        candidates_iter = get_dataloader_iter(
+            candidates_dataset, params["data_workers"], group_processed_candidates
+        )
+        create_hdf5_dataset_candidates(
+            candidates_iter, file_dicts, len(candidates_dataset.raw_data_set)
+        )
 
     # Close h5py files
     for file_dict in file_dicts.values():

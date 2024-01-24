@@ -3,7 +3,6 @@
 and using hdf5 file
 """
 
-
 class RetrievalDataset:
     def __init__(self, query, candidate, auxiliar) -> None:
         self.query = dict(query.items())

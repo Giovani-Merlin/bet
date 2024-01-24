@@ -62,10 +62,10 @@ Finally, we can evaluate it in the same way as BLINK - macro results per world w
 
 ## Results
 
-|   | Train R@1  | Validation R@1  | Test R@1  | Train R@64  | Validation R@64  | Test R@1  |
-|--- |--- |--- |--- |--- |--- |--- |
-| Blink  | x  | x  | 63.03  | 93.12  | 91.44  | 82.06  |
-| BET  | 78  | 68.5  | 68  | 98.12  | 94.2  | 90  |
+|       | Train R@1 | Validation R@1 | Test R@1 | Train R@64 | Validation R@64 | Test R@1 |
+| ----- | --------- | -------------- | -------- | ---------- | --------------- | -------- |
+| Blink | x         | x              | 63.03    | 93.12      | 91.44           | 82.06    |
+| BET   | 78        | 68.5           | 68       | 98.12      | 94.2            | 90       |
 
 All results from BLINK where colected from their paper. Results from BET where made by macro-averaging the results for all world results in the given dataset type (as BLINK).
 

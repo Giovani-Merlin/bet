@@ -2,6 +2,7 @@
     Needs to run examples.zeshel.split_by_worlds.py first
     Not optimized! It will reload the model for each world.
 """
+
 import logging
 import os
 
@@ -47,8 +48,7 @@ if __name__ == "__main__":
     for world in worlds:
         params["data_data_path"] = os.path.join(data_path, world)
         params["output_path"] = os.path.join(output_path, world)
-        params["testing_index_path"] = os.path.join(
-            output_path, world, "index")
+        params["testing_index_path"] = os.path.join(output_path, world, "index")
         world_results[world] = full_eval(params, "queries")
     # Group by dataset per model
     dataset_results = defaultdict(dict)
@@ -65,8 +65,7 @@ if __name__ == "__main__":
             for recall, value in stats_dict["recall"].items():
                 dataset_stats[recall].append(value)
         dataset_recall_results[dataset] = {
-            k: {"mean": np.mean(v), "std": np.std(v)}
-            for k, v in dataset_stats.items()
+            k: {"mean": np.mean(v), "std": np.std(v)} for k, v in dataset_stats.items()
         }
     # Save results of each model
 

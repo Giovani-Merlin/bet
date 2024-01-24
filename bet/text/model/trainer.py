@@ -24,11 +24,15 @@ class TextBiEncoderTrainer(pl.LightningModule):
         if not training_params["candidate_encoder_weights_path"]:
             self.candidate_encoder = CandidateEncoder(training_params)
         else:
-            self.candidate_encoder = CandidateEncoder.load_model(training_params["candidate_encoder_weights_path"])
+            self.candidate_encoder = CandidateEncoder.load_model(
+                training_params["candidate_encoder_weights_path"]
+            )
         if not training_params["query_encoder_weights_path"]:
             self.query_encoder = QueryEncoder(training_params)
         else:
-            self.query_encoder = QueryEncoder.load_model(training_params["query_encoder_weights_path"])
+            self.query_encoder = QueryEncoder.load_model(
+                training_params["query_encoder_weights_path"]
+            )
         # Get mean value of weights in the last layer and save it as a buffer
         # This will be used to re-scale the loss_parameter to avoid using manual optimization.
         # In this way the a single optimizer can handle all the parameters (as they're in the same scale)
@@ -38,7 +42,10 @@ class TextBiEncoderTrainer(pl.LightningModule):
         elif hasattr(model_module, "transformer"):
             last_layer = model_module.transformer.layer[-1].ffn.lin2.weight
         last_layer_mean_value = (torch.abs(last_layer).mean()).item()
-        re_escaler_factor = float(training_params["training_random_negatives_loss_scaler"]) / last_layer_mean_value
+        re_escaler_factor = (
+            float(training_params["training_random_negatives_loss_scaler"])
+            / last_layer_mean_value
+        )
         self.register_buffer("re_escaler_factor", torch.tensor(re_escaler_factor))
         self.random_negatives_loss_parameter = torch.nn.Parameter(
             torch.tensor(
@@ -69,7 +76,9 @@ class TextBiEncoderTrainer(pl.LightningModule):
         # Make symmetric matrix putting 1 in the same elements position and 0 in the rest
         candidates_mask = np.equal.outer(candidates_idx, candidates_idx)
         # Invert the diagonal to keep it
-        candidates_mask[np.diag_indices_from(candidates_mask)] = ~candidates_mask[np.diag_indices_from(candidates_mask)]
+        candidates_mask[np.diag_indices_from(candidates_mask)] = ~candidates_mask[
+            np.diag_indices_from(candidates_mask)
+        ]
         # -100 scores on it
         scores.view(-1)[candidates_mask.ravel()] = -100
         # Calculate the mean similarity between the candidates
@@ -77,7 +86,9 @@ class TextBiEncoderTrainer(pl.LightningModule):
         candidates_similarities = candidate_vecs @ candidate_vecs.T
         # Clip the candidate similarity - negative values will be treated as 0
         candidates_similarities = torch.clip(candidates_similarities, min=0)
-        mean_candidate_similarity = candidates_similarities.view(-1)[candidates_mask.ravel()].mean()
+        mean_candidate_similarity = candidates_similarities.view(-1)[
+            candidates_mask.ravel()
+        ].mean()
         loss_scaler = self.random_negatives_loss_parameter * self.re_escaler_factor
         self.log_dict(
             {"mean_candidate_similarity": mean_candidate_similarity},
@@ -145,7 +156,9 @@ class TextBiEncoderTrainer(pl.LightningModule):
         for n, candidate_index in enumerate(candidates_idx):
             # If it's not already encoded
             if candidate_index not in self.candidates_eval:
-                candidates_to_encode.append([candidate_input[n] for candidate_input in candidates_values])
+                candidates_to_encode.append(
+                    [candidate_input[n] for candidate_input in candidates_values]
+                )
                 self.candidates_eval.append(candidate_index)
         # Remap batch encode plus with the candidates
         # For that we will zip the inputs (transpose) and then stack them
@@ -154,14 +167,18 @@ class TextBiEncoderTrainer(pl.LightningModule):
             candidates = self.candidate_encoder(
                 {
                     key: torch.vstack(value)
-                    for key, value in zip(candidates_inputs.keys(), list(zip(*candidates_to_encode)))
+                    for key, value in zip(
+                        candidates_inputs.keys(), list(zip(*candidates_to_encode))
+                    )
                 }
             )
         query = self.query_encoder(query_inputs)
         val_output = {
             "query_encoded": query.detach().cpu().numpy(),
             "candidates_idx": candidates_idx,
-            "candidates_encoded": candidates.detach().cpu().numpy() if candidates is not None else None,
+            "candidates_encoded": (
+                candidates.detach().cpu().numpy() if candidates is not None else None
+            ),
         }
         self.val_output.append(val_output)
 
@@ -177,7 +194,11 @@ class TextBiEncoderTrainer(pl.LightningModule):
         outputs = self.val_output
         # all_candidates
         all_candidates = np.vstack(
-            [output["candidates_encoded"] for output in outputs if output["candidates_encoded"] is not None]
+            [
+                output["candidates_encoded"]
+                for output in outputs
+                if output["candidates_encoded"] is not None
+            ]
         )
 
         # all_queries
@@ -191,16 +212,22 @@ class TextBiEncoderTrainer(pl.LightningModule):
         ]
 
         # scores
-        scores = np.matmul(np.expand_dims(all_queries, 0), np.transpose(all_candidates)).squeeze()
+        scores = np.matmul(
+            np.expand_dims(all_queries, 0), np.transpose(all_candidates)
+        ).squeeze()
 
         # Sort results by candidate idx
         ordered_results = (-scores).argsort(axis=1)
         # Map candidate idx to position in candidates_pool
-        query_to_candidate_map = [self.candidates_eval.index(idx) for idx in all_correct_candidates_idx]
+        query_to_candidate_map = [
+            self.candidates_eval.index(idx) for idx in all_correct_candidates_idx
+        ]
         # Get the position of the correct candidate in the ordered results
         correct_candidate_position = [
             np.where(ordered_result == candidate_index)[0][0]
-            for ordered_result, candidate_index in zip(ordered_results, query_to_candidate_map)
+            for ordered_result, candidate_index in zip(
+                ordered_results, query_to_candidate_map
+            )
         ]
         # Get de training_eval_recall score
         tracking_metric = self.params["training_metric_tracking"]
@@ -209,7 +236,12 @@ class TextBiEncoderTrainer(pl.LightningModule):
             recall_ref = int(tracking_metric.split("@")[1])
         else:
             recall_ref = 1
-        score = np.mean([1 if position < recall_ref else 0 for position in correct_candidate_position])
+        score = np.mean(
+            [
+                1 if position < recall_ref else 0
+                for position in correct_candidate_position
+            ]
+        )
         correct_candidate_position = np.array(correct_candidate_position)
         # Sum of the position of the correct candidate in the ordered results - track if overfitting to some candidates
         # Also clip to avoid putting too much importance in some of them
@@ -256,8 +288,13 @@ class TextBiEncoderTrainer(pl.LightningModule):
                     parameters_with_decay_names.append(n)
 
         logger.info(f"Model have {len(list(self.named_parameters()))} parameters")
-        logger.info(f"{len(parameters_with_decay_names)} parameters will be optimized WITH decay")
-        logger.info(f"{len(parameters_without_decay_names)} parameters will be optimized WITHOUT decay")
+        logger.info(
+            f"{len(parameters_with_decay_names)} parameters will be optimized WITH decay"
+        )
+        logger.info(
+            f"{len(parameters_without_decay_names)} parameters will be optimized WITHOUT"
+            " decay"
+        )
         # Like self.random_negatives_loss
         loss_parameters = [self.random_negatives_loss_parameter]
         optimizer_grouped_parameters = [
@@ -280,7 +317,9 @@ class TextBiEncoderTrainer(pl.LightningModule):
             }
         ]
 
-        optimizer_grouped_parameters = optimizer_grouped_parameters + optimizer_loss_parameters
+        optimizer_grouped_parameters = (
+            optimizer_grouped_parameters + optimizer_loss_parameters
+        )
         # optimizer_scheduled = DeepSpeedCPUAdam(optimizer_grouped_parameters)
         optimizer_scheduled = AdamW(optimizer_grouped_parameters)
 
