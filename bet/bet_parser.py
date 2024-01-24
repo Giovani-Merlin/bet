@@ -57,7 +57,9 @@ class BaseParser(argparse.ArgumentParser):
 
         for group in self._action_groups:
             # Group args
-            group_dict = {a.dest: getattr(args, a.dest, None) for a in group._group_actions}
+            group_dict = {
+                a.dest: getattr(args, a.dest, None) for a in group._group_actions
+            }
             # Check if there are mutually exclusive arguments
             exclusive_groups = [
                 {a.dest: getattr(args, a.dest, None) for a in a._group_actions}
@@ -66,13 +68,15 @@ class BaseParser(argparse.ArgumentParser):
             # If there are, check if there are more than one argument defined
             for exclusive_group in exclusive_groups:
                 if sum([1 for v in exclusive_group.values() if v is not None]) > 1:
-                    raise ValueError(f"Mutually exclusive arguments {exclusive_group.keys()} are not allowed")
+                    raise ValueError(
+                        f"Mutually exclusive arguments {exclusive_group.keys()} are not"
+                        " allowed"
+                    )
             arg_groups[group.title] = group_dict
         return arg_groups
 
 
 class BetParser(BaseParser):
-
     """Arg parser class for BET training model"""
 
     def __init__(
@@ -104,7 +108,7 @@ class BetParser(BaseParser):
         self.add_argument(
             "--output_path",
             type=str,
-            default=self.model_defaults["output_path"],
+            default=self.model_defaults.get("output_path"),
             help="Output path to save any script output",
             metavar="\b",
         )
@@ -124,39 +128,39 @@ class BetParser(BaseParser):
         group.add_argument(
             f"--{arg_category}_data_path",
             type=str,
-            default=self.model_defaults[arg_category]["data_path"],
+            default=self.model_defaults[arg_category].get("data_path"),
             help="Path to the training data as BET format",
         )
         group.add_argument(
             f"--{arg_category}_cache_path",
             type=str,
-            default=self.model_defaults[arg_category]["cache_path"],
+            default=self.model_defaults[arg_category].get("cache_path"),
             help="Path to the hdf5 data files",
         )
         group.add_argument(
             f"--{arg_category}_use_title",
             type=boolean_string,
-            default=self.model_defaults[arg_category]["use_title"],
+            default=self.model_defaults[arg_category].get("use_title"),
             help="Whether to use the title of the document before the text",
         )
         group.add_argument(
             f"--{arg_category}_workers",
             type=int,
-            default=self.model_defaults[arg_category]["workers"],
+            default=self.model_defaults[arg_category].get("workers"),
             help="Number of workers to use for data loading",
             metavar="\b",
         )
         group.add_argument(
             f"--{arg_category}_candidate_max_length",
             type=int,
-            default=self.model_defaults[arg_category]["candidate_max_length"],
+            default=self.model_defaults[arg_category].get("candidate_max_length"),
             help="Max length of the text to be used",
             metavar="\b",
         )
         group.add_argument(
             f"--{arg_category}_query_max_length",
             type=int,
-            default=self.model_defaults[arg_category]["query_max_length"],
+            default=self.model_defaults[arg_category].get("query_max_length"),
             help="Max length of the text to be used",
             metavar="\b",
         )
@@ -167,10 +171,14 @@ class BetParser(BaseParser):
         """
         arg_category = "models"
         group = self.add_argument_group(arg_category)
-        self.add_encoder_args(group, self.model_defaults[arg_category]["query_encoder"], "query_encoder")
         self.add_encoder_args(
             group,
-            self.model_defaults[arg_category]["candidate_encoder"],
+            self.model_defaults[arg_category].get("query_encoder"),
+            "query_encoder",
+        )
+        self.add_encoder_args(
+            group,
+            self.model_defaults[arg_category].get("candidate_encoder"),
             "candidate_encoder",
         )
 
@@ -181,14 +189,17 @@ class BetParser(BaseParser):
         group.add_argument(
             f"--{arg_category}_model",
             type=str,
-            default=defaults["model"],
-            help="Hugging face model to use. Tested for bert, xlm, distilbert, roberta and distilroberta",
+            default=defaults.get("model"),
+            help=(
+                "Hugging face model to use. Tested for bert, xlm, distilbert, roberta"
+                " and distilroberta"
+            ),
             metavar="\b",
         )
         group.add_argument(
             f"--{arg_category}_append_model",
             type=str,
-            default=defaults["append_model"],
+            default=defaults.get("append_model"),
             help="Model to concatenate on the output",
             metavar="\b",
             choices=["ffn"],
@@ -196,15 +207,18 @@ class BetParser(BaseParser):
         group.add_argument(
             f"--{arg_category}_output_dimension",
             type=str,
-            default=defaults["output_dimension"],
+            default=defaults.get("output_dimension"),
             help="Only valid when append a model",
             metavar="\b",
         )
         group.add_argument(
             f"--{arg_category}_weights_path",
             type=str,
-            default=defaults["weights_path"],
-            help="Path to the weights to be loaded - if not specified, the model will use the pretrained weights of the hugginface model",
+            default=defaults.get("weights_path"),
+            help=(
+                "Path to the weights to be loaded - if not specified, the model will use"
+                " the pretrained weights of the hugginface model"
+            ),
             metavar="\b",
         )
 
@@ -217,66 +231,74 @@ class BetParser(BaseParser):
         group.add_argument(
             f"--{arg_category}_debug",
             type=boolean_string,
-            default=self.model_defaults[arg_category]["debug"],
+            default=self.model_defaults[arg_category].get("debug"),
             help="Whether to use the title of the document before the text",
         )
         group.add_argument(
             f"--{arg_category}_seed",
             type=int,
-            default=self.model_defaults[arg_category]["seed"],
+            default=self.model_defaults[arg_category].get("seed"),
             metavar="\b",
         )
         group.add_argument(
             f"--{arg_category}_shuffle",
             type=boolean_string,
-            default=self.model_defaults[arg_category]["shuffle"],
+            default=self.model_defaults[arg_category].get("shuffle"),
             metavar="\b",
         )
 
         group.add_argument(
             f"--{arg_category}_random_negatives_loss_scaler",
             type=float,
-            default=self.model_defaults[arg_category]["random_negatives_loss_scaler"],
-            help="Random negatives loss scaler initial value - to transform cos similarity in logits",
+            default=self.model_defaults[arg_category].get(
+                "random_negatives_loss_scaler"
+            ),
+            help=(
+                "Random negatives loss scaler initial value - to transform cos"
+                " similarity in logits"
+            ),
         )
 
         group.add_argument(
             f"--{arg_category}_learning_rate",
             type=float,
-            default=self.model_defaults[arg_category]["learning_rate"],
+            default=self.model_defaults[arg_category].get("learning_rate"),
             metavar="\b",
         )
 
         group.add_argument(
             f"--{arg_category}_batch_size",
             type=int,
-            default=self.model_defaults[arg_category]["batch_size"],
+            default=self.model_defaults[arg_category].get("batch_size"),
             metavar="\b",
         )
         group.add_argument(
             f"--{arg_category}_auto_batch_size",
             type=boolean_string,
-            default=self.model_defaults[arg_category]["auto_batch_size"],
+            default=self.model_defaults[arg_category].get("auto_batch_size"),
             metavar="\b",
         )
         group.add_argument(
             f"--{arg_category}_patience",
             type=int,
-            default=self.model_defaults[arg_category]["patience"],
+            default=self.model_defaults[arg_category].get("patience"),
             help="Patience for early stopping - units of validation check interval",
             metavar="\b",
         )
         group.add_argument(
             f"--{arg_category}_val_check_interval",
             type=float,
-            default=self.model_defaults[arg_category]["val_check_interval"],
-            help="Validation check interval - units of batches, also defines the patience for early stopping",
+            default=self.model_defaults[arg_category].get("val_check_interval"),
+            help=(
+                "Validation check interval - units of batches, also defines the patience"
+                " for early stopping"
+            ),
             metavar="\b",
         )
         group.add_argument(
             f"--{arg_category}_precision",
             type=str,
-            default=self.model_defaults[arg_category]["precision"],
+            default=self.model_defaults[arg_category].get("precision"),
             help="Precision to use for training as lightning str format - 16 or 32",
             metavar="\b",
         )
@@ -284,14 +306,14 @@ class BetParser(BaseParser):
         group.add_argument(
             f"--{arg_category}_weight_decay",
             type=float,
-            default=self.model_defaults[arg_category]["weight_decay"],
+            default=self.model_defaults[arg_category].get("weight_decay"),
             help="Weight decay for optimizer",
             metavar="\b",
         )
         group.add_argument(
             f"--{arg_category}_warmup_proportion",
             type=float,
-            default=self.model_defaults[arg_category]["warmup_proportion"],
+            default=self.model_defaults[arg_category].get("warmup_proportion"),
             help="Warmup proportion for optimizer",
             metavar="\b",
         )
@@ -299,14 +321,14 @@ class BetParser(BaseParser):
         group.add_argument(
             f"--{arg_category}_max_epochs",
             type=int,
-            default=self.model_defaults[arg_category]["max_epochs"],
+            default=self.model_defaults[arg_category].get("max_epochs"),
             help="Max number of epochs to perform the training",
             metavar="\b",
         )
         group.add_argument(
             f"--{arg_category}_min_epochs",
             type=int,
-            default=self.model_defaults[arg_category]["min_epochs"],
+            default=self.model_defaults[arg_category].get("min_epochs"),
             help="Min epochs to perform before stopping the training",
             metavar="\b",
         )
@@ -321,15 +343,19 @@ class BetParser(BaseParser):
 
         group.add_argument(
             f"--{arg_category}_metric_tracking",
-            default=self.model_defaults[arg_category]["metric_tracking"],
+            default=self.model_defaults[arg_category].get("metric_tracking"),
             type=str,
-            help="Metric to monitor in training. Checkpoint and early stopping will use this metric. For recall use recall_R@x where x is the number of candidates to search for (e.g. recall_R@5)",
+            help=(
+                "Metric to monitor in training. Checkpoint and early stopping will use"
+                " this metric. For recall use recall_R@x where x is the number of"
+                " candidates to search for (e.g. recall_R@5)"
+            ),
             metavar="\b",
         )
         group.add_argument(
             f"--{arg_category}_metric_tracking_mode",
             type=str,
-            default=self.model_defaults[arg_category]["metric_tracking_mode"],
+            default=self.model_defaults[arg_category].get("metric_tracking_mode"),
             metavar="\b",
             help="Metric mode to use in training. Modes are min or max",
         )
@@ -337,7 +363,7 @@ class BetParser(BaseParser):
         group.add_argument(
             f"--{arg_category}_reset_last_n_layers",
             type=int,
-            default=self.model_defaults[arg_category]["reset_last_n_layers"],
+            default=self.model_defaults[arg_category].get("reset_last_n_layers"),
             metavar="\b",
             help="Number of layers to reset in the model",
         )
@@ -351,22 +377,35 @@ class BetParser(BaseParser):
         group.add_argument(
             f"--{arg_category}_batch_size",
             type=int,
-            default=self.model_defaults[arg_category]["batch_size"],
+            default=self.model_defaults[arg_category].get("batch_size"),
             metavar="\b",
         )
 
         group.add_argument(
             f"--{arg_category}_top_k",
-            default=self.model_defaults[arg_category]["top_k"],
+            default=self.model_defaults[arg_category].get("top_k"),
             type=int,
-            help="Number of candidates to search for (and compute statistics) when doing full evaluation",
+            help=(
+                "Number of candidates to search for (and compute statistics) when doing"
+                " full evaluation"
+            ),
             metavar="\b",
         )
 
         group.add_argument(
             f"--{arg_category}_index_path",
-            default=self.model_defaults[arg_category]["index_path"],
+            default=self.model_defaults[arg_category].get("index_path"),
             type=str,
             help="Path to the index to be loaded/created",
+            metavar="\b",
+        )
+        group.add_argument(
+            f"--{arg_category}_pool_size",
+            default=self.model_defaults[arg_category].get("pool_size"),
+            type=int,
+            help=(
+                "Size of the pool to create the index, it will use the first N"
+                " candidates"
+            ),
             metavar="\b",
         )
