@@ -10,6 +10,7 @@ tensorboard>=2.9.0
 scikit-learn>=1.1.3
 h5py>=3.8.0
 tables>=3.8.0
+numpy==1.25
 # Language specifics
 # French
 sacremoses>=0.0.53
