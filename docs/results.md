@@ -70,3 +70,35 @@ Finally, we can evaluate it in the same way as BLINK - macro results per world w
 All results from BLINK where colected from their paper. Results from BET where made by macro-averaging the results for all world results in the given dataset type (as BLINK).
 
 We can see huge improvement in all the datasets, this improvement probably is due to the methodology choosen for creating the pre-training dataset, that is, it was pre-trained with a hard dataset, being force to learn the context of the data and not memorizing the candidate's surfaces.
+
+## Ablation for candidates pool size
+
+A quick study was made to see how the candidates pool size affects the results. These results were obtained using the german model.
+
+Considering the train set, we see how the recall is affected by the candidates pool size. It starts with 77k candidates as the train set contained 77k candidates.
+
+with 77k candidates
+1: 0.91, 2: 0.94, 8:0.98 ,16: 0.99
+with 150k
+1: 0.87 , 2: 0.91 , 8: 0.96 , 16: 0.98
+with 300k:
+1: 0.84, 2:0.88 , 8: 0.95 . 16: 0.97
+
+As for the test set (starting with 5k candidates)
+
+5k
+1:0.96 , 2: 0.97 , 8: 0.98 , 16: 0.99
+10k:
+1: 0.94, 2:0.95 . 8: 0.97 , 16: 0.98
+20k:
+1: 0.91, 2: 0.93, 8: 0.96, 16: 0.97
+50k:
+1: 0.88, 2: 0.90, 8: 0.94, 16: 0.96
+150k:
+1: 0.83, 2: 0.86, 8: 0.91, 16: 0.94
+300k:
+1: 0.80, 2: 0.84, 8: 0.90, 16: 0.92
+
+We observe a consistent parallel trend in the progression of both the test and train sets. However, the recall of the train set is consistently higher.
+
+It is essential to carefully choose the size of the candidate pool to ensure a high recall rate. Moreover, this observation highlights the excellent performance of the model in the test set, especially when limiting the candidate pool to non-seen candidates. Therefore, using a pre-trained model for entity linking in new domains with a restricted candidate pool is an effective approach.
